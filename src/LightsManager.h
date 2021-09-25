@@ -51,6 +51,9 @@ struct LightsState
 
 	// This isn't actually a light, but it's typically implemented in the same way.
 	bool m_bCoinCounter;
+
+	//light pulsing to the beat of the current song
+	bool m_beat;
 };
 
 class LightsDriver;

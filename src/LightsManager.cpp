@@ -179,6 +179,7 @@ void LightsManager::Update( float fDeltaTime )
 	{
 		ZERO( m_LightsState.m_bCabinetLights );
 		ZERO( m_LightsState.m_bGameButtonLights );
+		m_LightsState.m_beat = false;
 	}
 
 	{
@@ -336,6 +337,7 @@ void LightsManager::Update( float fDeltaTime )
 			/* Blink menu lights on the first half of the beat */
 			if( fracf(fLightSongBeat) <= 0.5f )
 			{
+				m_LightsState.m_beat = true;
 				FOREACH_PlayerNumber( pn )
 				{
 					if( !GAMESTATE->m_bSideIsJoined[pn] )
@@ -358,6 +360,7 @@ void LightsManager::Update( float fDeltaTime )
 		case LIGHTSMODE_GAMEPLAY:
 		{
 			bool bGameplay = (m_LightsMode == LIGHTSMODE_DEMONSTRATION) || (m_LightsMode == LIGHTSMODE_GAMEPLAY);
+			m_LightsState.m_beat = fracf(GAMESTATE->m_Position.m_fLightSongBeat) <= 0.5f;
 
 			// Blink on notes during gameplay.
 			if( bGameplay && g_bBlinkGameplayButtonLightsOnNote )

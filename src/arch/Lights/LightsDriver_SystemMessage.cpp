@@ -39,6 +39,7 @@ void LightsDriver_SystemMessage::Set( const LightsState *ls )
 		}
 		s += "\n";
 	}
+	s += ssprintf("Beat: %d\n", ls->m_beat);
 
 	SCREENMAN->SystemMessageNoAnimate( s );
 }
