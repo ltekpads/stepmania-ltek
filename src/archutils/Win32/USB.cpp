@@ -48,7 +48,18 @@ static RString GetUSBDevicePath( int iNum )
 	return sRet;
 }
 
-bool USBDevice::Open( int iVID, int iPID, int iBlockSize, int iNum, void (*pfnInit)(HANDLE) )
+WindowsFileMode USBToWindows(USBMode mode)
+{
+	int result = 0;
+	if (mode & USB_READ)
+		result |= WINDOWS_READ;
+	if (mode & USB_WRITE)
+		result |= WINDOWS_WRITE;
+
+	return (WindowsFileMode)result;
+}
+
+bool USBDevice::Open( int iVID, int iPID, int iBlockSize, int iNum, void (*pfnInit)(HANDLE), USBMode mode )
 {
 	DWORD iIndex = 0;
 
@@ -86,7 +97,7 @@ bool USBDevice::Open( int iVID, int iPID, int iBlockSize, int iNum, void (*pfnIn
 			pfnInit( h );
 		CloseHandle(h);
 
-		m_IO.Open( path, iBlockSize );
+		m_IO.Open( path, iBlockSize, USBToWindows(mode) );
 		return true;
 	}
 
@@ -125,7 +136,31 @@ WindowsFileIO::~WindowsFileIO()
 	delete[] m_pBuffer;
 }
 
-bool WindowsFileIO::Open( RString path, int iBlockSize )
+DWORD ModeToAccess(WindowsFileMode mode)
+{
+	DWORD result = 0;
+	
+	if (mode & WINDOWS_READ)
+		result |= GENERIC_READ;
+	if (mode & WINDOWS_WRITE)
+		result |= GENERIC_WRITE;
+
+	return result;
+}
+
+DWORD ModeToAttributes(WindowsFileMode mode)
+{
+	DWORD result = 0;
+
+	if (mode & WINDOWS_READ)
+		result |= FILE_FLAG_OVERLAPPED;
+	if (mode & WINDOWS_WRITE)
+		result |= FILE_ATTRIBUTE_DEVICE;
+
+	return result;
+}
+
+bool WindowsFileIO::Open( RString path, int iBlockSize, WindowsFileMode mode)
 {
 	LOG->Trace( "WindowsFileIO::open(%s)", path.c_str() );
 	m_iBlockSize = iBlockSize;
@@ -136,14 +171,16 @@ bool WindowsFileIO::Open( RString path, int iBlockSize )
 
 	if( m_Handle != INVALID_HANDLE_VALUE )
 		CloseHandle( m_Handle );
+	DWORD access = ModeToAccess(mode);
 
-	m_Handle = CreateFile( path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
-		NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL );
+	m_Handle = CreateFile( path, ModeToAccess(mode), FILE_SHARE_READ | FILE_SHARE_WRITE,
+			NULL, OPEN_EXISTING, ModeToAttributes(mode), NULL );
 
 	if( m_Handle == INVALID_HANDLE_VALUE )
 		return false;
 
-	queue_read();
+	if(mode & WINDOWS_READ)
+		queue_read();
 
 	return true;
 }
@@ -189,6 +226,11 @@ int WindowsFileIO::read( void *p )
 		return -1;
 
 	return finish_read(p);
+}
+
+bool WindowsFileIO::write(const char* buffer, int length)
+{
+	return WriteFile(m_Handle, buffer, length, nullptr, nullptr);
 }
 
 int WindowsFileIO::read_several(const vector<WindowsFileIO *> &sources, void *p, int &actual, float timeout)

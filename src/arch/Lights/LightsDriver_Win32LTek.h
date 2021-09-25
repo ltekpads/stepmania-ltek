@@ -1,51 +1,55 @@
-#include "global.h"
-#include "InputHandler_Win32_Para.h"
+#ifndef LightsDriver_Win32LTek_H
+#define LightsDriver_Win32LTek_H
 
-#include "RageLog.h"
-#include "RageUtil.h"
-#include "RageInputDevice.h"
+#include "arch/Lights/LightsDriver.h"
 #include "archutils/Win32/USB.h"
 
-// TODO: Abstract this windows-specific stuff into USBDevice.
-extern "C" {
-#include "archutils/Win32/ddk/setupapi.h"
-/* Quiet header warning: */
-#include "archutils/Win32/ddk/hidsdi.h"
-}
-
-REGISTER_INPUT_HANDLER_CLASS2( Para, Win32_Para );
-
-static void InitHack( HANDLE h )
+class LightsDriver_Win32LTek : public LightsDriver
 {
-	UCHAR hack[] = {0, 1};
+public:
+	LightsDriver_Win32LTek();
+	virtual ~LightsDriver_Win32LTek();
 
-	if( HidD_SetFeature(h, (PVOID) hack, 2) == TRUE )
-		LOG->Info( "Para controller powered on successfully" );
-	else
-		LOG->Warn( "Para controller power-on failed" );
-}
+	virtual void Set( const LightsState *ls );
+private:
+	USBDevice *m_pDevice;
+	void FreeDevice();
+};
 
-InputHandler_Win32_Para::InputHandler_Win32_Para()
+enum LTekCommand : char
 {
-	const int para_usb_vid = 0x0507;
-	const int para_usb_pid = 0x0011;
+	SET_LIGHTS = 1,
+};
 
-	USBDevice *dev = new USBDevice;
+typedef struct LTekLightsReport {
+	/* command number, 1 = set lights */
+	LTekCommand command;
+	//not used, additional flags for a command
+	char commandFlags;
+	/*light indicating a beat */
+	char beat;
+	/* cabinet lights on first six bits */
+	char lightsCabinet;
+	char reserved1;
+	char reserved2;
+	/* player1 game input lights on first six bits of a value: left, right, up, down, up-left, up-rigtht */
+	char lightsP1Game;
+	/* player1 system input lights on first 5 bits: left, right, up, down, start */
+	char lightsP1System;
+	char reserved3;
+	/* same as for p1 */
+	char lightsP2Game;
+	/* same as for p1 */
+	char lightsP2System;
+	char reserved4;
+	char lifeBarP1;
+	char lifeBarP2;
+} LTekLightsReport;
 
-	if( dev->Open(para_usb_vid, para_usb_pid, sizeof(long), 0, InitHack, USB_READ ))
-	{
-		LOG->Info("Para controller initialized");
-	}
-	SAFE_DELETE( dev );
-}
-
-void InputHandler_Win32_Para::GetDevicesAndDescriptions(vector<InputDeviceInfo>& vDevicesOut )
-{
-	// The device appears as a HID joystick
-}
+#endif
 
 /*
- * (c) 2002-2004 Chris Danford, Glenn Maynard
+ * (c) 2021 Hikari
  * All rights reserved.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
