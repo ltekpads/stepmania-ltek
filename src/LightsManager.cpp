@@ -480,7 +480,7 @@ void LightsManager::Update( float fDeltaTime )
 	// blink the menu buttons rapidly so they'll press Start
 	{
 		int iBeat = (int)(GAMESTATE->m_Position.m_fLightSongBeat*4);
-		bool bBlinkOn = (iBeat%2)==0;
+		bool bBlinkOn = iBeat==0;
 		FOREACH_PlayerNumber( pn )
 		{
 			if( !GAMESTATE->m_bSideIsJoined[pn] && GAMESTATE->PlayersCanJoin() && GAMESTATE->EnoughCreditsToJoin() )
