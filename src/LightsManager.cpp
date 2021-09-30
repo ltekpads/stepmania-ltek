@@ -15,6 +15,8 @@
 #include "CommonMetrics.h"
 #include "Style.h"
 
+const char LIFEBAR_NOT_AVAILABLE = 255;
+const char LIFEBAR_BATTERY_OFFSET = 100;
 const RString DEFAULT_LIGHTS_DRIVER = "SystemMessage,Export";
 static Preference<RString> g_sLightsDriver( "LightsDriver", "" ); // "" == DEFAULT_LIGHTS_DRIVER
 Preference<float>	g_fLightsFalloffSeconds( "LightsFalloffSeconds", 0.1f );
@@ -105,6 +107,8 @@ LightsManager::LightsManager()
 	ZERO( m_fSecsLeftInGameButtonBlink );
 	ZERO( m_fActorLights );
 	ZERO( m_fSecsLeftInActorLightBlink );
+	ZERO( m_Lifebars );
+
 	m_iQueuedCoinCounterPulses = 0;
 	m_CoinCounterTimer.SetZero();
 
@@ -136,6 +140,29 @@ void LightsManager::BlinkActorLight( CabinetLight cl )
 float LightsManager::GetActorLightLatencySeconds() const
 {
 	return g_fLightEffectRiseSeconds;
+}
+
+void LightsManager::NotifyLifeChanged( PlayerNumber pn, float percent, int lives )
+{
+	ASSERT(pn < NUM_PlayerNumber);
+	ASSERT(percent >= 0 && percent <= 1);
+	ASSERT(lives >= 0);
+	m_Lifebars[pn].numeric = lives;
+	m_Lifebars[pn].percentage = percent;
+}
+
+int FindLifebarLightValue(float lifePercentage)
+{
+	if (lifePercentage <= 0)
+		return 0;
+	if (lifePercentage >= 1)
+		return 100;
+	int asInt = roundf(lifePercentage * 100);
+	if (asInt <= 0)
+		return 1;
+	if (asInt >= 100)
+		return 99;
+	return asInt;
 }
 
 void LightsManager::Update( float fDeltaTime )
@@ -180,6 +207,11 @@ void LightsManager::Update( float fDeltaTime )
 		ZERO( m_LightsState.m_bCabinetLights );
 		ZERO( m_LightsState.m_bGameButtonLights );
 		m_LightsState.m_beat = false;
+	}
+	//gamestate based computed lights
+	{
+		FOREACH_PlayerNumber( p )
+			m_LightsState.m_cLifeBarLights[p] = LIFEBAR_NOT_AVAILABLE;
 	}
 
 	{
@@ -373,6 +405,22 @@ void LightsManager::Update( float fDeltaTime )
 					}
 				}
 				break;
+			}
+
+			if( bGameplay )
+			{
+				FOREACH_ENUM( PlayerNumber, pn )
+				{
+					if (!GAMESTATE->m_bSideIsJoined[pn])
+					{
+						m_LightsState.m_cLifeBarLights[pn] = LIFEBAR_NOT_AVAILABLE;
+						continue;
+					}
+					LifebarState& state = m_Lifebars[pn];
+					m_LightsState.m_cLifeBarLights[pn] = state.numeric > 0
+						? LIFEBAR_BATTERY_OFFSET + state.numeric
+						: FindLifebarLightValue(state.percentage);
+				}
 			}
 
 			// fall through to blink on button presses

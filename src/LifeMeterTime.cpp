@@ -206,6 +206,7 @@ void LifeMeterTime::SendLifeChangedMessage( float fOldLife, TapNoteScore tns, Ho
 	msg.SetParam( "OldLife", fOldLife );
 	msg.SetParam( "Difference", fOldLife - m_fLifeTotalLostSeconds );
 	msg.SetParam( "LifeMeter", LuaReference::CreateFromPush(*this) );
+	LIGHTSMAN->NotifyLifeChanged(m_pPlayerState->m_PlayerNumber, GetLife(), 0);
 	MESSAGEMAN->Broadcast( msg );
 }
 

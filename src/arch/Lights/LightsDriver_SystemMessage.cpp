@@ -39,6 +39,11 @@ void LightsDriver_SystemMessage::Set( const LightsState *ls )
 		}
 		s += "\n";
 	}
+	FOREACH_ENUM(PlayerNumber, pn)
+	{
+		s += ssprintf("Lifebar%d: %i\n", pn + 1, ls->m_cLifeBarLights[pn]);
+	}
+
 	s += ssprintf("Beat: %d\n", ls->m_beat);
 
 	SCREENMAN->SystemMessageNoAnimate( s );

@@ -203,6 +203,7 @@ void LifeMeterBattery::BroadcastLifeChanged(bool lost_life)
 	msg.SetParam("LifeMeter", LuaReference::CreateFromPush(*this));
 	msg.SetParam("LivesLeft", GetLivesLeft());
 	msg.SetParam("LostLife", lost_life);
+	LIGHTSMAN->NotifyLifeChanged(m_pPlayerState->m_PlayerNumber, GetLife(), GetLivesLeft());
 	MESSAGEMAN->Broadcast(msg);
 }
 
