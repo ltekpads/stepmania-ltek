@@ -1,5 +1,8 @@
 #ifndef TOMCRYPT_H_
 #define TOMCRYPT_H_
+#if WIN32
+#include <Windows.h>
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
