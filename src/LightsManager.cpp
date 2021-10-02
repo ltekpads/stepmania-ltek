@@ -206,6 +206,7 @@ void LightsManager::Update( float fDeltaTime )
 	{
 		ZERO( m_LightsState.m_bCabinetLights );
 		ZERO( m_LightsState.m_bGameButtonLights );
+		ZERO( m_LightsState.m_bMenuButtonLights );
 		m_LightsState.m_beat = false;
 	}
 	//gamestate based computed lights
@@ -435,6 +436,11 @@ void LightsManager::Update( float fDeltaTime )
 				{
 					bool bOn = INPUTMAPPER->IsBeingPressed( GameInput(gc,gb) );
 					m_LightsState.m_bGameButtonLights[gc][gb] = bOn;
+				}
+				for (int a = GAME_BUTTON_MENULEFT; a <= GAME_BUTTON_SELECT; a++)
+				{
+					bool bOn = INPUTMAPPER->IsBeingPressed(GameInput(gc, (GameButton)a));
+					m_LightsState.m_bMenuButtonLights[gc][a] = bOn;
 				}
 			}
 

@@ -48,11 +48,12 @@ struct LightsState
 {
 	bool m_bCabinetLights[NUM_CabinetLight];
 	bool m_bGameButtonLights[NUM_GameController][NUM_GameButton];
+	bool m_bMenuButtonLights[NUM_GameController][GAME_BUTTON_SELECT+1];
 	//255 = no lifebar available
 	//0 = game over
 	//100 = full health
 	//101-109 = battery lifes
-	char m_cLifeBarLights[NUM_PlayerNumber];
+	char m_cLifeBarLights[NUM_GameController];
 
 	// This isn't actually a light, but it's typically implemented in the same way.
 	bool m_bCoinCounter;
