@@ -7,13 +7,12 @@ REGISTER_LIGHTS_DRIVER_CLASS(Win32LTek);
 const int Vid = 0x483;
 const int Pid = 0x5711;
 const int HidCollection = 2;
-const int HidReportLength = 65;
 const int ReportTypeSetLights = 10;
 
 USBDevice* FindDevice()
 {
 	USBDevice* device = new USBDevice;
-	if (device->Open(Vid, Pid, HidReportLength, HidCollection-1, nullptr, USB_WRITE))
+	if (device->Open(Vid, Pid, sizeof(HidReport<LTekLightsReport>), HidCollection-1, nullptr, USB_WRITE))
 		return device;
 	SAFE_DELETE(device);
 	return nullptr;
@@ -39,6 +38,25 @@ void LightsDriver_Win32LTek::FreeDevice()
 
 static RageTimer reconnectTimer;
 
+char LifebarStateToByte(const LifebarState& state)
+{
+	if (!state.present)
+		return 255;
+	if (state.mode == LIFEBARMODE_PERCENTAGE)
+		return state.percent;
+
+	return 100 + state.lives;
+}
+
+char PackArray(const bool* values, int length)
+{
+	ASSERT(length < 8);
+	char result = 0;
+	for (int a = 0; a < length; a++)
+		result |= (values[a] ? 1 << a : 0);
+	return result;
+}
+
 void LightsDriver_Win32LTek::Set( const LightsState *ls )
 {
 	if (!m_pDevice)
@@ -50,20 +68,24 @@ void LightsDriver_Win32LTek::Set( const LightsState *ls )
 		if (!m_pDevice)
 			return;
 	}
-	ASSERT(sizeof(HidReport<LTekLightsReport>) < HidReportLength);
 
-	char buffer[HidReportLength];
-	ZeroMemory(buffer, HidReportLength);
-	HidReport<LTekLightsReport>* report = (HidReport<LTekLightsReport>*)buffer;
-	report->reportType = ReportTypeSetLights;
+	HidReport<LTekLightsReport> report;
+	ZERO( report );
+	report.reportType = ReportTypeSetLights;
+	LTekLightsReport* lights = &report.data;
 
-	LTekLightsReport* lights = &report->data;
+	lights->beat = ls->m_beat;
 	lights->command = LTekCommand::SET_LIGHTS;
-	ASSERT(NUM_CabinetLight == 6);
-	for (int a = 0; a < NUM_CabinetLight; a++)
-		lights->lightsCabinet |= ls->m_bCabinetLights[a] ? (1 << a) : 0;
+	lights->commandFlags = 0;
+	lights->lifeBarP1 = LifebarStateToByte(ls->m_cLifeBarLights[0]);
+	lights->lifeBarP2 = LifebarStateToByte(ls->m_cLifeBarLights[1]);
+	lights->lightsCabinet = PackArray(ls->m_bCabinetLights, NUM_CabinetLight);
+	lights->lightsP1Game = PackArray(ls->m_bGameButtonLights[0] + DANCE_BUTTON_LEFT, 6);
+	lights->lightsP1System = PackArray(ls->m_bMenuButtonLights[0], 6);
+	lights->lightsP2Game = PackArray(ls->m_bGameButtonLights[1] + DANCE_BUTTON_LEFT, 6);
+	lights->lightsP2System = PackArray(ls->m_bMenuButtonLights[1], 6);
 
-	if (!m_pDevice->m_IO.write(buffer, HidReportLength))
+	if (!m_pDevice->m_IO.write((char*)&report, sizeof(HidReport<LTekLightsReport>)))
 	{
 		//device was probably disconnected
 		reconnectTimer.Touch();

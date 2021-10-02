@@ -44,6 +44,7 @@ typedef struct LTekLightsReport {
 	char reserved4;
 	char lifeBarP1;
 	char lifeBarP2;
+	char padding[64 - 14]; //hid report should be 64 bytes long
 } LTekLightsReport;
 
 #endif
