@@ -44,16 +44,29 @@ enum LightsMode
 const RString& LightsModeToString( LightsMode lm );
 LuaDeclareType( LightsMode );
 
+enum LifebarMode
+{
+	LIFEBARMODE_PERCENTAGE,
+	LIFEBARMODE_NUMERIC,
+	NUM_LifebarMode,
+	LifebarMode_Invalid
+};
+
+struct LifebarState
+{
+	bool present;
+	LifebarMode mode;
+	int percent; //used by LifeMeterBar and LifeMeterTime
+	int lives; // used by LifeMetterBattery
+};
+
 struct LightsState
 {
 	bool m_bCabinetLights[NUM_CabinetLight];
 	bool m_bGameButtonLights[NUM_GameController][NUM_GameButton];
 	bool m_bMenuButtonLights[NUM_GameController][GAME_BUTTON_SELECT+1];
-	//255 = no lifebar available
-	//0 = game over
-	//100 = full health
-	//101-109 = battery lifes
-	char m_cLifeBarLights[NUM_GameController];
+
+	LifebarState m_cLifeBarLights[NUM_GameController];
 
 	// This isn't actually a light, but it's typically implemented in the same way.
 	bool m_bCoinCounter;
@@ -62,10 +75,11 @@ struct LightsState
 	bool m_beat;
 };
 
-struct LifebarState
+struct LifebarData
 {
-	float percentage; //used by LifeMeterBar and LifeMeterTime
-	int numeric; // used by LifeMetterBattery
+	LifebarMode mode;
+	int percent; //used by LifeMeterBar and LifeMeterTime
+	int lives; // used by LifeMetterBattery
 };
 
 class LightsDriver;
@@ -86,7 +100,7 @@ public:
 	float GetActorLightLatencySeconds() const;
 
 	void SetLightsMode( LightsMode lm );
-	void NotifyLifeChanged( PlayerNumber pn, float percent, int lives );
+	void NotifyLifeChanged( PlayerNumber pn, LifebarMode mode, float value );
 	LightsMode GetLightsMode();
 
 	void PrevTestCabinetLight()		{ ChangeTestCabinetLight(-1); }
@@ -105,7 +119,7 @@ private:
 	float m_fSecsLeftInGameButtonBlink[NUM_GameController][NUM_GameButton];
 	float m_fActorLights[NUM_CabinetLight];	// current "power" of each actor light
 	float m_fSecsLeftInActorLightBlink[NUM_CabinetLight];	// duration to "power" an actor light
-	LifebarState m_Lifebars[NUM_PlayerNumber];
+	LifebarData m_Lifebars[NUM_PlayerNumber];
 
 	vector<LightsDriver*> m_vpDrivers;
 	LightsMode m_LightsMode;

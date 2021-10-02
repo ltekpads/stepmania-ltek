@@ -270,7 +270,7 @@ void LifeMeterBar::AfterLifeChanged()
 	Message msg( "LifeChanged" );
 	msg.SetParam( "Player", m_pPlayerState->m_PlayerNumber );
 	msg.SetParam( "LifeMeter", LuaReference::CreateFromPush(*this) );
-	LIGHTSMAN->NotifyLifeChanged(m_pPlayerState->m_PlayerNumber, m_fLifePercentage, 0);
+	LIGHTSMAN->NotifyLifeChanged(m_pPlayerState->m_PlayerNumber, LIFEBARMODE_PERCENTAGE, m_fLifePercentage);
 	MESSAGEMAN->Broadcast( msg );
 }
 

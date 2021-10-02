@@ -15,8 +15,6 @@
 #include "CommonMetrics.h"
 #include "Style.h"
 
-const char LIFEBAR_NOT_AVAILABLE = 255;
-const char LIFEBAR_BATTERY_OFFSET = 100;
 const RString DEFAULT_LIGHTS_DRIVER = "SystemMessage,Export";
 static Preference<RString> g_sLightsDriver( "LightsDriver", "" ); // "" == DEFAULT_LIGHTS_DRIVER
 Preference<float>	g_fLightsFalloffSeconds( "LightsFalloffSeconds", 0.1f );
@@ -142,15 +140,6 @@ float LightsManager::GetActorLightLatencySeconds() const
 	return g_fLightEffectRiseSeconds;
 }
 
-void LightsManager::NotifyLifeChanged( PlayerNumber pn, float percent, int lives )
-{
-	ASSERT(pn < NUM_PlayerNumber);
-	ASSERT(percent >= 0 && percent <= 1);
-	ASSERT(lives >= 0);
-	m_Lifebars[pn].numeric = lives;
-	m_Lifebars[pn].percentage = percent;
-}
-
 int FindLifebarLightValue(float lifePercentage)
 {
 	if (lifePercentage <= 0)
@@ -163,6 +152,17 @@ int FindLifebarLightValue(float lifePercentage)
 	if (asInt >= 100)
 		return 99;
 	return asInt;
+}
+
+
+void LightsManager::NotifyLifeChanged( PlayerNumber pn, LifebarMode mode, float value )
+{
+	ASSERT(pn < NUM_PlayerNumber);
+	ASSERT(mode < NUM_LightsMode );
+	ASSERT(value >= 0 && value <= 100);
+	m_Lifebars[pn].mode = mode;
+	m_Lifebars[pn].lives = mode == LIFEBARMODE_NUMERIC ? value : 0;
+	m_Lifebars[pn].percent = mode == LIFEBARMODE_PERCENTAGE ? FindLifebarLightValue(value) : 0;
 }
 
 void LightsManager::Update( float fDeltaTime )
@@ -207,12 +207,8 @@ void LightsManager::Update( float fDeltaTime )
 		ZERO( m_LightsState.m_bCabinetLights );
 		ZERO( m_LightsState.m_bGameButtonLights );
 		ZERO( m_LightsState.m_bMenuButtonLights );
+		ZERO( m_LightsState.m_cLifeBarLights );
 		m_LightsState.m_beat = false;
-	}
-	//gamestate based computed lights
-	{
-		FOREACH_PlayerNumber( p )
-			m_LightsState.m_cLifeBarLights[p] = LIFEBAR_NOT_AVAILABLE;
 	}
 
 	{
@@ -414,13 +410,14 @@ void LightsManager::Update( float fDeltaTime )
 				{
 					if (!GAMESTATE->m_bSideIsJoined[pn])
 					{
-						m_LightsState.m_cLifeBarLights[pn] = LIFEBAR_NOT_AVAILABLE;
 						continue;
 					}
-					LifebarState& state = m_Lifebars[pn];
-					m_LightsState.m_cLifeBarLights[pn] = state.numeric > 0
-						? LIFEBAR_BATTERY_OFFSET + state.numeric
-						: FindLifebarLightValue(state.percentage);
+					LifebarData& state = m_Lifebars[pn];
+					LifebarState& target = m_LightsState.m_cLifeBarLights[pn];
+					target.present = true;
+					target.lives = state.lives;
+					target.percent = state.percent;
+					target.mode = state.mode;
 				}
 			}
 
