@@ -81,9 +81,9 @@ void LightsDriver_Win32LTek::Set( const LightsState *ls )
 	lights->lifeBarP2 = LifebarStateToByte(ls->m_cLifeBarLights[1]);
 	lights->lightsCabinet = PackArray(ls->m_bCabinetLights, NUM_CabinetLight);
 	lights->lightsP1Game = PackArray(ls->m_bGameButtonLights[0] + DANCE_BUTTON_LEFT, 6);
-	lights->lightsP1System = PackArray(ls->m_bMenuButtonLights[0], 6);
+	lights->lightsP1System = PackArray(ls->m_bGameButtonLights[0], 6);
 	lights->lightsP2Game = PackArray(ls->m_bGameButtonLights[1] + DANCE_BUTTON_LEFT, 6);
-	lights->lightsP2System = PackArray(ls->m_bMenuButtonLights[1], 6);
+	lights->lightsP2System = PackArray(ls->m_bGameButtonLights[1], 6);
 
 	if (!m_pDevice->m_IO.write((char*)&report, sizeof(HidReport<LTekLightsReport>)))
 	{
