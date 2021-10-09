@@ -557,7 +557,7 @@ void GameSoundManager::Update( float fDeltaTime )
 	{
 		/* There's no song playing.  Fake it. */
 		CHECKPOINT_M( ssprintf("%f, delta %f", GAMESTATE->m_Position.m_fMusicSeconds, fDeltaTime) );
-		GAMESTATE->UpdateSongPosition( GAMESTATE->m_Position.m_fMusicSeconds + fDeltaTime * g_Playing->m_Music->GetPlaybackRate() , g_Playing->m_Timing );
+		GAMESTATE->UpdateSongPosition( GAMESTATE->m_Position.m_fMusicSeconds + fDeltaTime * g_Playing->m_Music->GetPlaybackRate() , g_Playing->m_Timing, g_Playing->m_bHasTiming );
 		return;
 	}
 
@@ -599,11 +599,11 @@ void GameSoundManager::Update( float fDeltaTime )
 	{
 		/* We're still waiting for the new sound to start playing, so keep using the
 		 * old timing data and fake the time. */
-		GAMESTATE->UpdateSongPosition( GAMESTATE->m_Position.m_fMusicSeconds + fDeltaTime, g_Playing->m_Timing );
+		GAMESTATE->UpdateSongPosition( GAMESTATE->m_Position.m_fMusicSeconds + fDeltaTime, g_Playing->m_Timing, g_Playing->m_bHasTiming );
 	}
 	else
 	{
-		GAMESTATE->UpdateSongPosition( fSeconds + fAdjust, g_Playing->m_Timing, tm + fAdjust );
+		GAMESTATE->UpdateSongPosition( fSeconds + fAdjust, g_Playing->m_Timing, g_Playing->m_bHasTiming, tm + fAdjust );
 	}
 
 	// Send crossed messages

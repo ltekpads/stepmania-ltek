@@ -20,6 +20,7 @@ public:
 	float		m_fSongBeatNoOffset;
 	float		m_fCurBPS;
 	float		m_fLightSongBeat; // g_fLightsFalloffSeconds ahead
+	bool		m_bHasTiming; //is the song using a real timing data or a default one?
 	//bool		m_bStop;	// in the middle of a stop (freeze or delay)
 	/** @brief A flag to determine if we're in the middle of a freeze/stop. */
 	bool		m_bFreeze;
@@ -34,7 +35,7 @@ public:
 	float		m_fSongBeatVisible;
 
 	void Reset();
-	void UpdateSongPosition( float fPositionSeconds, const TimingData &timing, const RageTimer &timestamp = RageZeroTimer );
+	void UpdateSongPosition( float fPositionSeconds, const TimingData &timing, bool hasTiming, const RageTimer &timestamp = RageZeroTimer );
 
 	// Lua
 	void PushSelf( lua_State *L );

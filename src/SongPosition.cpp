@@ -3,7 +3,7 @@
 
 static Preference<float> g_fVisualDelaySeconds( "VisualDelaySeconds", 0.0f );
 
-void SongPosition::UpdateSongPosition( float fPositionSeconds, const TimingData &timing, const RageTimer &timestamp )
+void SongPosition::UpdateSongPosition( float fPositionSeconds, const TimingData &timing, bool hasTiming, const RageTimer &timestamp )
 {
 
 	if( !timestamp.IsZero() )
@@ -30,6 +30,7 @@ void SongPosition::UpdateSongPosition( float fPositionSeconds, const TimingData 
 	m_fLightSongBeat = timing.GetBeatFromElapsedTime( fPositionSeconds + g_fLightsAheadSeconds );
 
 	m_fSongBeatNoOffset = timing.GetBeatFromElapsedTimeNoOffset( fPositionSeconds );
+	m_bHasTiming = hasTiming;
 	
 	m_fMusicSecondsVisible = fPositionSeconds - g_fVisualDelaySeconds.Get();
 	beat_info.elapsed_time= m_fMusicSecondsVisible;
@@ -49,6 +50,7 @@ void SongPosition::Reset()
 	m_fSongBeatNoOffset = 0;
 	m_fCurBPS = 10;
 	//m_bStop = false;
+	m_bHasTiming = false;
 	m_bFreeze = false;
 	m_bDelay = false;
 	m_iWarpBeginRow = -1; // Set to -1 because some song may want to warp to row 0. -aj
@@ -69,6 +71,7 @@ public:
 	DEFINE_METHOD( GetCurBPS, m_fCurBPS );
 	DEFINE_METHOD( GetFreeze, m_bFreeze );
 	DEFINE_METHOD( GetDelay, m_bDelay );
+	DEFINE_METHOD( GetHasTiming, m_bHasTiming);
 	DEFINE_METHOD( GetWarpBeginRow, m_iWarpBeginRow );
 	DEFINE_METHOD( GetWarpDestination, m_fWarpDestination );
 
@@ -82,6 +85,7 @@ public:
 		ADD_METHOD( GetCurBPS );
 		ADD_METHOD( GetFreeze );
 		ADD_METHOD( GetDelay );
+		ADD_METHOD( GetHasTiming );
 		ADD_METHOD( GetWarpBeginRow );
 		ADD_METHOD( GetWarpDestination );
 	}

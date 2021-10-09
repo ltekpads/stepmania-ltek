@@ -271,7 +271,7 @@ public:
 	void ResetMusicStatistics();	// Call this when it's time to play a new song.  Clears the values above.
 	void SetPaused(bool p) { m_paused= p; }
 	bool GetPaused() { return m_paused; }
-	void UpdateSongPosition( float fPositionSeconds, const TimingData &timing, const RageTimer &timestamp = RageZeroTimer );
+	void UpdateSongPosition( float fPositionSeconds, const TimingData &timing, bool hasTiming, const RageTimer &timestamp = RageZeroTimer );
 	float GetSongPercent( float beat ) const;
 
 	bool AllAreInDangerOrWorse() const;
