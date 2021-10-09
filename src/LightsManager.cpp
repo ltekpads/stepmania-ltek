@@ -491,6 +491,18 @@ void LightsManager::Update( float fDeltaTime )
 		}
 	}
 
+	//combine each player menu input state with cabinet controlled lights
+	{
+		FOREACH_PlayerNumber(pn)
+		{
+			for (int a = GAME_BUTTON_MENULEFT; a <= GAME_BUTTON_SELECT; a++)
+			{
+				bool userInput = m_LightsState.m_bMenuButtonLights[pn][a];
+				m_LightsState.m_bGameButtonLights[pn][a] |= userInput;
+			}
+		}
+	}
+
 	// apply new light values we set above
 	FOREACH( LightsDriver*, m_vpDrivers, iter )
 		(*iter)->Set( &m_LightsState );

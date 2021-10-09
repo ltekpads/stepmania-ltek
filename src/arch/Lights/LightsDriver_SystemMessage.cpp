@@ -37,11 +37,6 @@ void LightsDriver_SystemMessage::Set( const LightsState *ls )
 		{
 			s += ls->m_bGameButtonLights[gc][gb] ? '1' : '0';
 		}
-		s += ", menu: ";
-		for (int a = GAME_BUTTON_MENULEFT; a <= GAME_BUTTON_SELECT; a++)
-		{
-			s += ls->m_bMenuButtonLights[gc][a] ? '1' : '0';
-		}
 		s += "\n";
 	}
 	FOREACH_ENUM(PlayerNumber, pn)
