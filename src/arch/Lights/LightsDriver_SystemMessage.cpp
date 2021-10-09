@@ -42,7 +42,7 @@ void LightsDriver_SystemMessage::Set( const LightsState *ls )
 	FOREACH_ENUM(PlayerNumber, pn)
 	{
 		const LifebarState* bar = &ls->m_cLifeBarLights[pn];
-		s += ssprintf("Lifebar%d: %i\n", pn + 1, bar->lives > 0 ? bar->lives : bar->percent);
+		s += ssprintf("Lifebar%d: %i\n", pn + 1, bar->present ? (bar->lives > 0 ? bar->lives : bar->percent) : -1);
 	}
 
 	s += ssprintf("Beat: %d\n", ls->m_beat);

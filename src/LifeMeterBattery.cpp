@@ -254,6 +254,7 @@ void LifeMeterBattery::Refresh()
 		m_textNumLives.SetVisible(false);
 	}
 	//update m_sprBattery
+	LIGHTSMAN->NotifyLifeChanged(m_pPlayerState->m_PlayerNumber, LIFEBARMODE_NUMERIC, GetLivesLeft());
 }
 
 int LifeMeterBattery::GetTotalLives()
