@@ -14,12 +14,13 @@
 #include "GameManager.h"
 #include "CommonMetrics.h"
 #include "Style.h"
+#include "PlayerState.h"
 
 const RString DEFAULT_LIGHTS_DRIVER = "SystemMessage,Export";
 static Preference<RString> g_sLightsDriver( "LightsDriver", "" ); // "" == DEFAULT_LIGHTS_DRIVER
 Preference<float>	g_fLightsFalloffSeconds( "LightsFalloffSeconds", 0.1f );
 Preference<float>	g_fLightsAheadSeconds( "LightsAheadSeconds", 0.05f );
-static Preference<bool>	g_bBlinkGameplayButtonLightsOnNote( "BlinkGameplayButtonLightsOnNote", false );
+static Preference<GamplayButtonBlinkMode>	g_BlinkGameplayButtonLightsOnNote( "BlinkGameplayButtonLightsOnNote", GBBM_DuringAutoPlay );
 
 static ThemeMetric<RString> GAME_BUTTONS_TO_SHOW( "LightsManager", "GameButtonsToShow" );
 
@@ -392,10 +393,15 @@ void LightsManager::Update( float fDeltaTime )
 			m_LightsState.m_beat = fracf(GAMESTATE->m_Position.m_fLightSongBeat) <= 0.5f && GAMESTATE->m_Position.m_bHasTiming;
 
 			// Blink on notes during gameplay.
-			if( bGameplay && g_bBlinkGameplayButtonLightsOnNote )
+			if( bGameplay && g_BlinkGameplayButtonLightsOnNote != GBBM_Never )
 			{
 				FOREACH_ENUM( GameController,  gc )
 				{
+					bool isCpu = GAMESTATE->m_pPlayerState[gc]->m_PlayerController != PC_HUMAN;
+					bool shouldBlink = (g_BlinkGameplayButtonLightsOnNote == GBBM_DuringAutoPlay && isCpu)
+						|| g_BlinkGameplayButtonLightsOnNote == GBBM_Always;
+					if (!shouldBlink)
+						continue;
 					FOREACH_ENUM( GameButton,  gb )
 					{
 						m_LightsState.m_bGameButtonLights[gc][gb] = m_fSecsLeftInGameButtonBlink[gc][gb] > 0 ;

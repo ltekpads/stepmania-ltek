@@ -123,6 +123,15 @@ enum BackgroundFitMode
 	BackgroundFitMode_Invalid
 };
 
+enum GamplayButtonBlinkMode
+{
+	GBBM_Never,
+	GBBM_Always,
+	GBBM_DuringAutoPlay,
+	NUM_GamplayButtonBlinkMode,
+	GamplayButtonBlinkMode_Invalid
+};
+
 /** @brief Holds user-chosen preferences that are saved between sessions. */
 class PrefsManager
 {

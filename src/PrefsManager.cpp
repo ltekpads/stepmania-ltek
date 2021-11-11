@@ -140,6 +140,15 @@ XToString( BackgroundFitMode );
 StringToX( BackgroundFitMode );
 LuaXType( BackgroundFitMode );
 
+static const char* GamplayButtonBlinkModeNames[] = {
+	"Never",
+	"Always",
+	"DuringAutoPlay",
+};
+XToString( GamplayButtonBlinkMode );
+StringToX( GamplayButtonBlinkMode );
+LuaXType( GamplayButtonBlinkMode );
+
 bool g_bAutoRestart = false;
 #ifdef DEBUG
 # define TRUE_IF_DEBUG true
