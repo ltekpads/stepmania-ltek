@@ -1,4 +1,6 @@
 #include "global.h"
+#include <queue>
+#include <unordered_set>
 #include "InputMapper.h"
 #include "IniFile.h"
 #include "MessageManager.h"
@@ -595,7 +597,24 @@ void InputMapper::ApplyMapping( const vector<AutoMappingEntry> &vMmaps, GameCont
 	}
 }
 
-void InputMapper::AutoMapJoysticksForCurrentGame()
+GameController InputMapper::FindMappedController( InputDevice device )
+{
+	FOREACH_ENUM(GameController, controller)
+	{
+		FOREACH_ENUM(GameButton, button)
+		{
+			for (int slot = 0; slot < NUM_USER_GAME_TO_DEVICE_SLOTS; slot++)
+			{
+				const DeviceInput& input = m_mappings.m_GItoDI[controller][button][slot];
+				if (input.device == device)
+					return controller;
+			}
+		}
+	}
+	return GameController_Invalid;
+}
+
+void InputMapper::AutoMapJoysticksForCurrentGame( AutoMappingMode mode )
 {
 	vector<InputDeviceInfo> vDevices;
 	INPUTMAN->GetDevicesAndDescriptions(vDevices);
@@ -641,13 +660,41 @@ void InputMapper::AutoMapJoysticksForCurrentGame()
 		}
 	}
 
+	InputDevice deviceMapping[NUM_GameController];
+	FOREACH_ENUM(GameController, c)
+	{
+		deviceMapping[c] = InputDevice_Invalid;
+	}
+
+	//when devices are changed during gameplay we should avoid remapping any existing devices so that not affected players can play without any interruptions
+	if (mode == AUTO_MAP_CHANGED)
+	{
+		FOREACH_CONST(InputDeviceInfo, vDevices, device)
+		{
+			const GameController currentController = FindMappedController(device->id);
+			if (currentController != GameController_Invalid)
+				deviceMapping[currentController] = device->id;
+		}
+	}
+
+	std::queue<GameController> toMap;
+	std::unordered_set<InputDevice> mapped;
+	FOREACH_ENUM(GameController, c)
+	{
+		if (deviceMapping[c] == InputDevice_Invalid)
+			toMap.push(c);
+		else
+			mapped.insert(deviceMapping[c]);
+	}
 
 	// apply auto mappings
-	int iNumJoysticksMapped = 0;
 	FOREACH_CONST( InputDeviceInfo, vDevices, device )
 	{
 		InputDevice id = device->id;
 		const RString &sDescription = device->sDesc;
+		if (mapped.find(id) != mapped.end()) //already mapped don't mess with it
+			continue;
+		
 		FOREACH_CONST( AutoMappings, vAutoMappings, mapping )
 		{
 			Regex regex( mapping->m_sDriverRegex );
@@ -655,17 +702,19 @@ void InputMapper::AutoMapJoysticksForCurrentGame()
 				continue;	// driver names don't match
 
 			// We have a mapping for this joystick
-			GameController gc = (GameController)iNumJoysticksMapped;
+			if (toMap.size() == 0)
+				break; // stop mapping.  We already mapped one device for each game controller.
+
+			GameController gc = toMap.front();
+			toMap.pop();
 			if( gc >= NUM_GameController )
-				break;	// stop mapping.  We already mapped one device for each game controller.
+				break;	
 
 			LOG->Info( "Applying default joystick mapping #%d for device '%s' (%s)",
-				iNumJoysticksMapped+1, mapping->m_sDriverRegex.c_str(), mapping->m_sControllerName.c_str() );
+				gc +1, mapping->m_sDriverRegex.c_str(), mapping->m_sControllerName.c_str() );
 
 			Unmap( id );
 			ApplyMapping( mapping->m_vMaps, gc, id );
-
-			iNumJoysticksMapped++;
 		}
 	}
 }
@@ -768,7 +817,7 @@ void InputMapper::SanityCheckMappings(vector<RString>& reason)
 static LocalizedString CONNECTED			( "InputMapper", "Connected" );
 static LocalizedString DISCONNECTED			( "InputMapper", "Disconnected" );
 static LocalizedString AUTOMAPPING_ALL_JOYSTICKS	( "InputMapper", "Auto-mapping all joysticks." );
-bool InputMapper::CheckForChangedInputDevicesAndRemap( RString &sMessageOut )
+bool InputMapper::CheckForChangedInputDevicesAndRemap( AutoMappingMode mode, RString &sMessageOut )
 {
 	// Only check for changes in joysticks since that's all we know how to remap.
 
@@ -815,7 +864,7 @@ bool InputMapper::CheckForChangedInputDevicesAndRemap( RString &sMessageOut )
 	if( g_bAutoMapOnJoyChange )
 	{
 		sMessageOut += AUTOMAPPING_ALL_JOYSTICKS.GetValue();
-		AutoMapJoysticksForCurrentGame();
+		AutoMapJoysticksForCurrentGame(mode);
 		SaveMappingsToDisk();
 		MESSAGEMAN->Broadcast( Message_AutoJoyMappingApplied );
 	}

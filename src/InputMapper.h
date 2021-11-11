@@ -11,6 +11,14 @@ const int NUM_SHOWN_GAME_TO_DEVICE_SLOTS = 3;
 const int NUM_USER_GAME_TO_DEVICE_SLOTS = 2;
 extern const RString DEVICE_INPUT_SEPARATOR;
 
+enum AutoMappingMode
+{
+	AUTO_MAP_FULL,
+	AUTO_MAP_CHANGED,
+	NUM_AutoMappingMode,
+	AutoMappingMode_Invalid
+};
+
 struct AutoMappingEntry
 {
 	AutoMappingEntry( int i, DeviceButton db, GameButton gb, bool b ):
@@ -162,8 +170,8 @@ public:
 	bool ClearFromInputMap( const GameInput &GameI, int iSlotIndex );
 
 	void AddDefaultMappingsForCurrentGameIfUnmapped();
-	void AutoMapJoysticksForCurrentGame();
-	bool CheckForChangedInputDevicesAndRemap( RString &sMessageOut );
+	void AutoMapJoysticksForCurrentGame( AutoMappingMode mode );
+	bool CheckForChangedInputDevicesAndRemap( AutoMappingMode mode,  RString &sMessageOut );
 
 	bool IsMapped( const DeviceInput &DeviceI ) const;
 
@@ -205,6 +213,7 @@ protected:
 private:
 	InputMapper(const InputMapper& rhs);
 	InputMapper& operator=(const InputMapper& rhs);
+	GameController FindMappedController(InputDevice device);
 };
 
 extern InputMapper*	INPUTMAPPER;	// global and accessible from anywhere in our program
