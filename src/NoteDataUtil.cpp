@@ -703,47 +703,29 @@ void LightTransformHelper( const NoteData &in, NoteData &out, const vector<int> 
 	for( unsigned i = 0; i < aiTracks.size(); ++i )
 		ASSERT_M( aiTracks[i] < out.GetNumTracks(), ssprintf("%i, %i", aiTracks[i], out.GetNumTracks()) );
 
-	FOREACH_NONEMPTY_ROW_ALL_TRACKS( in, r )
+	for (const int trackNumber : aiTracks)
 	{
-		/* If any row starts a hold note, find the end of the hold note, and keep searching
-		 * until we've extended to the end of the latest overlapping hold note. */
-		int iHoldStart = r;
-		int iHoldEnd = -1;
-		for(;;)
-		{
-			int iMaxTailRow = FindLongestOverlappingHoldNoteForAnyTrack( in, r );
-			if( iMaxTailRow == -1 )
-			{
-				break;
-			}
-			iHoldEnd = iMaxTailRow;
-			r = iMaxTailRow;
-		}
-
-		if( iHoldEnd != -1 )
-		{
-			// If we found a hold note, add it to all tracks.
-			for( unsigned i = 0; i < aiTracks.size(); ++i )
-			{
-				int t = aiTracks[i];
-				out.AddHoldNote( t, iHoldStart, iHoldEnd, TAP_ORIGINAL_HOLD_HEAD );
-			}
-			continue;
-		}
-
-		if( in.IsRowEmpty(r) )
+		if (trackNumber >= in.GetNumTracks())
 			continue;
 
-		// Enable every track in the output.
-		for( unsigned i = 0; i < aiTracks.size(); ++i )
+		FOREACH_NONEMPTY_ROW_IN_TRACK(in, trackNumber, row)
 		{
-			int t = aiTracks[i];
-			out.SetTapNote( t, r, TAP_ORIGINAL_TAP );
+			const TapNote& tn = in.GetTapNote(trackNumber, row);
+			if( tn.type == TapNoteType_Tap )
+				out.SetTapNote( trackNumber, row, TAP_ORIGINAL_TAP );
+			if (tn.type == TapNoteType_HoldHead)
+				out.AddHoldNote(trackNumber, row, row+tn.iDuration, TAP_ORIGINAL_HOLD_HEAD);
 		}
 	}
 }
 
-// For every track enabled in "in", enable all tracks in "out".
+void GenerateBeatLight(const NoteData& in, NoteData& out, int track)
+{
+	const int end = in.GetLastRow();
+	for (int beat = 0; beat < end; beat += ROWS_PER_BEAT)
+		out.AddHoldNote(track, beat, beat + ROWS_PER_BEAT / 2, TAP_ORIGINAL_HOLD_HEAD);
+}
+
 void NoteDataUtil::LoadTransformedLights( const NoteData &in, NoteData &out, int iNewNumTracks )
 {
 	// reset all notes
@@ -756,6 +738,8 @@ void NoteDataUtil::LoadTransformedLights( const NoteData &in, NoteData &out, int
 		aiTracks.push_back( i );
 
 	LightTransformHelper( in, out, aiTracks );
+	GenerateBeatLight(in, out, LIGHT_BASS_LEFT);
+	GenerateBeatLight(in, out, LIGHT_BASS_RIGHT);
 }
 
 // This transform is specific to StepsType_lights_cabinet.
