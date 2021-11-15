@@ -18,6 +18,16 @@ USBDevice* FindDevice()
 	return nullptr;
 }
 
+static bool Check_Win32LTek()
+{
+	USBDevice* device = FindDevice();
+	bool available = device;
+	SAFE_DELETE(device);
+	return available;
+}
+
+REGISTER_LIGHTS_DRIVER_AVAILABILITY_CHECK(Win32LTek);
+
 LightsDriver_Win32LTek::LightsDriver_Win32LTek()
 {
 	m_pDevice = FindDevice();

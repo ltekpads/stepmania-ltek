@@ -100,6 +100,12 @@ static void GetUsedGameInputs( vector<GameInput> &vGameInputsOut )
 
 LightsManager*	LIGHTSMAN = NULL;	// global and accessible from anywhere in our program
 
+const RString FindDefaultDriver()
+{
+	const RString dynamic = LightsDriver::FindAvailable();
+	return dynamic.size() > 0 ? dynamic : DEFAULT_LIGHTS_DRIVER;
+}
+
 LightsManager::LightsManager()
 {
 	ZERO( m_fSecsLeftInCabinetLightBlink );
@@ -113,8 +119,12 @@ LightsManager::LightsManager()
 
 	m_LightsMode = LIGHTSMODE_JOINING;
 	RString sDriver = g_sLightsDriver.Get();
-	if( sDriver.empty() )
-		sDriver = DEFAULT_LIGHTS_DRIVER;
+	if (sDriver.empty())
+	{
+		sDriver = FindDefaultDriver();
+		if (sDriver.length() > 0)
+			g_sLightsDriver.Set(sDriver);
+	}
 	LightsDriver::Create( sDriver, m_vpDrivers );
 
 	SetLightsMode( LIGHTSMODE_ATTRACT );

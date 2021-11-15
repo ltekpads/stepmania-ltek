@@ -5,6 +5,43 @@
 #include "arch/arch_default.h"
 
 DriverList LightsDriver::m_pDriverList;
+AvailabilityList LightsDriver::m_pAvailabilityList;
+
+void AvailabilityList::Add(const istring& sName, CheckAvailabilityFn pfn)
+{
+	if (m_pRegistrees == NULL)
+		m_pRegistrees = new map<istring, CheckAvailabilityFn>;
+
+	ASSERT(m_pRegistrees->find(sName) == m_pRegistrees->end());
+	(*m_pRegistrees)[sName] = pfn;
+}
+
+bool AvailabilityList::IsAvailable(const RString& sDriverName)
+{
+	if (m_pRegistrees == NULL)
+		return false;
+
+	map<istring, CheckAvailabilityFn>::const_iterator iter = m_pRegistrees->find(istring(sDriverName));
+	if (iter == m_pRegistrees->end())
+		return NULL;
+	return (iter->second)();
+}
+
+RegisterAvailabilityCheck::RegisterAvailabilityCheck(AvailabilityList* pList, const istring& sName, CheckAvailabilityFn pfn)
+{
+	pList->Add(sName, pfn);
+}
+
+
+const RString LightsDriver::FindAvailable()
+{
+	for (const auto item : *m_pAvailabilityList.m_pRegistrees)
+	{
+		if (item.second())
+			return RString(item.first.c_str());
+	}
+	return RString("");
+}
 
 void LightsDriver::Create( const RString &sDrivers, vector<LightsDriver *> &Add )
 {
