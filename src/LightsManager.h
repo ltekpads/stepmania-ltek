@@ -134,6 +134,7 @@ private:
 	int GetTestAutoCycleCurrentIndex() { return (int)m_fTestAutoCycleCurrentIndex; }
 
 	float			m_fTestAutoCycleCurrentIndex;
+	RageTimer	m_modeSwitchTime;
 	CabinetLight	m_clTestManualCycleCurrent;
 	int				m_iControllerTestManualCycleCurrent;
 };

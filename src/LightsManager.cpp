@@ -347,8 +347,16 @@ void LightsManager::Update( float fDeltaTime )
 		case LIGHTSMODE_STAGE:
 		case LIGHTSMODE_ALL_CLEARED:
 		{
-			FOREACH_CabinetLight( cl )
-				m_LightsState.m_bCabinetLights[cl] = true;
+			const float blinkTimeMs = 200;
+			int index = (m_modeSwitchTime.Ago() * 1000) / blinkTimeMs;
+			bool blinkUp = index % 2 == 0;
+			
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_LEFT] = blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_RIGHT] = blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_LR_LEFT] = !blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_LR_RIGHT] = !blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_BASS_RIGHT] = false;
+			m_LightsState.m_bCabinetLights[LIGHT_BASS_LEFT] = false;
 
 			break;
 		}
@@ -565,6 +573,7 @@ void LightsManager::SetLightsMode( LightsMode lm )
 	m_fTestAutoCycleCurrentIndex = 0;
 	m_clTestManualCycleCurrent = CabinetLight_Invalid;
 	m_iControllerTestManualCycleCurrent = -1;
+	m_modeSwitchTime.SetZero();
 }
 
 LightsMode LightsManager::GetLightsMode()
