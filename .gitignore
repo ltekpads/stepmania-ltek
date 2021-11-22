@@ -188,3 +188,8 @@ BuildLog.htm
 *.swp
 *.pc
 *.d
+*.recipe
+*.vcxproj
+*.filters
+*.lib
+/StepMania.sln
