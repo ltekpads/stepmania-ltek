@@ -257,6 +257,7 @@ PrefsManager::PrefsManager() :
 	m_bShowBeginnerHelper		( "ShowBeginnerHelper",			false ),
 	m_bDisableScreenSaver		( "DisableScreenSaver",			true ),
 	m_sLanguage			( "Language",				"" ),	// ThemeManager will deal with this invalid language
+	m_sLightsDriver			( "LightsDriver",			"" ),	// LightsManager will deal with this
 	m_sMemoryCardProfileSubdir	( "MemoryCardProfileSubdir",		PRODUCT_ID ),
 	m_iProductID			( "ProductID",				1 ),
 	m_iCenterImageTranslateX	( "CenterImageTranslateX",		0 ),

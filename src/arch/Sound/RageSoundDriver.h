@@ -212,7 +212,7 @@ private:
 
 // Can't use Create##name because many of these have -sw suffixes.
 #define REGISTER_SOUND_DRIVER_CLASS2( name, x ) \
-	static RegisterRageDriver register_##x( &RageSoundDriver::m_pDriverList, #name, CreateClass<RageSoundDriver_##x, RageDriver> )
+	static RegisterRageDriver register_##x( &RageSoundDriver::m_pDriverList, #name, "", CreateClass<RageSoundDriver_##x, RageDriver> )
 #define REGISTER_SOUND_DRIVER_CLASS( name ) REGISTER_SOUND_DRIVER_CLASS2( name, name )
 
 

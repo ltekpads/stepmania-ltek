@@ -43,6 +43,18 @@ const RString LightsDriver::FindAvailable()
 	return RString("");
 }
 
+const RString LightsDriver::FindDisplayName(const RString& driverName)
+{
+	return m_pDriverList.FindDisplayName(driverName);
+}
+
+
+const void LightsDriver::ListDrivers(vector<RString>& drivers)
+{
+	for (const auto item : *m_pDriverList.m_pRegistrees)
+		drivers.push_back(RString(item.first.c_str()));
+}
+
 void LightsDriver::Create( const RString &sDrivers, vector<LightsDriver *> &Add )
 {
 	LOG->Trace( "Initializing lights drivers: %s", sDrivers.c_str() );

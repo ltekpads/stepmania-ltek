@@ -3,7 +3,7 @@
 #include "windows.h"
 #include "RageUtil.h"
 
-REGISTER_LIGHTS_DRIVER_CLASS(Win32LTek);
+REGISTER_LIGHTS_DRIVER_CLASS(Win32LTek, "L-Tek");
 const int Vid = 0x483;
 const int Pid = 0x5711;
 const int HidCollection = 2;

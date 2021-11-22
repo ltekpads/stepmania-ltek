@@ -69,7 +69,7 @@ private:
 };
 
 #define REGISTER_INPUT_HANDLER_CLASS2( name, x ) \
-	static RegisterRageDriver register_##name( &InputHandler::m_pDriverList, #name, CreateClass<InputHandler_##x, RageDriver> )
+	static RegisterRageDriver register_##name( &InputHandler::m_pDriverList, #name, "", CreateClass<InputHandler_##x, RageDriver> )
 #define REGISTER_INPUT_HANDLER_CLASS( name ) REGISTER_INPUT_HANDLER_CLASS2( name, name )
 
 

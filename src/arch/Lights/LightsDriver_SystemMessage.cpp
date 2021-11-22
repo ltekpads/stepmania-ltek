@@ -4,7 +4,7 @@
 #include "InputMapper.h"
 #include "PrefsManager.h"
 
-REGISTER_LIGHTS_DRIVER_CLASS(SystemMessage);
+REGISTER_LIGHTS_DRIVER_CLASS(SystemMessage, "Debug");
 
 LightsDriver_SystemMessage::LightsDriver_SystemMessage()
 {

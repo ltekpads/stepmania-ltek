@@ -16,8 +16,7 @@
 #include "Style.h"
 #include "PlayerState.h"
 
-const RString DEFAULT_LIGHTS_DRIVER = "SystemMessage,Export";
-static Preference<RString> g_sLightsDriver( "LightsDriver", "" ); // "" == DEFAULT_LIGHTS_DRIVER
+const RString DEFAULT_LIGHTS_DRIVER = "SystemMessage"; //use single driver by default so that the menu configuration screen is displayed correctly
 Preference<float>	g_fLightsFalloffSeconds( "LightsFalloffSeconds", 0.1f );
 Preference<float>	g_fLightsAheadSeconds( "LightsAheadSeconds", 0.05f );
 static Preference<GamplayButtonBlinkMode>	g_BlinkGameplayButtonLightsOnNote( "BlinkGameplayButtonLightsOnNote", GBBM_DuringAutoPlay );
@@ -106,6 +105,16 @@ const RString FindDefaultDriver()
 	return dynamic.size() > 0 ? dynamic : DEFAULT_LIGHTS_DRIVER;
 }
 
+const void LightsManager::ListDrivers(vector<RString>& drivers)
+{
+	LightsDriver::ListDrivers(drivers);
+}
+
+const RString LightsManager::FindDisplayName(const RString& driverName)
+{
+	return LightsDriver::FindDisplayName(driverName);
+}
+
 LightsManager::LightsManager()
 {
 	ZERO( m_fSecsLeftInCabinetLightBlink );
@@ -118,12 +127,12 @@ LightsManager::LightsManager()
 	m_CoinCounterTimer.SetZero();
 
 	m_LightsMode = LIGHTSMODE_JOINING;
-	RString sDriver = g_sLightsDriver.Get();
+	RString sDriver = PREFSMAN->m_sLightsDriver.Get();
 	if (sDriver.empty())
 	{
 		sDriver = FindDefaultDriver();
 		if (sDriver.length() > 0)
-			g_sLightsDriver.Set(sDriver);
+			PREFSMAN->m_sLightsDriver.Set(sDriver);
 	}
 	LightsDriver::Create( sDriver, m_vpDrivers );
 
@@ -135,6 +144,22 @@ LightsManager::~LightsManager()
 	FOREACH( LightsDriver*, m_vpDrivers, iter )
 		SAFE_DELETE( *iter );
 	m_vpDrivers.clear();
+}
+
+void LightsManager::Reload()
+{
+	FOREACH(LightsDriver*, m_vpDrivers, iter)
+		SAFE_DELETE(*iter);
+	m_vpDrivers.clear();
+
+	RString sDriver = PREFSMAN->m_sLightsDriver.Get();
+	if (sDriver.empty())
+	{
+		sDriver = FindDefaultDriver();
+		if (sDriver.length() > 0)
+			PREFSMAN->m_sLightsDriver.Set(sDriver);
+	}
+	LightsDriver::Create(sDriver, m_vpDrivers);
 }
 
 // XXX: Allow themer to change these. (rewritten; who wrote original? -aj)

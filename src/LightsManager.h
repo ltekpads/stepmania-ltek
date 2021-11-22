@@ -92,6 +92,9 @@ public:
 
 	void Update( float fDeltaTime );
 	bool IsEnabled() const;
+	void Reload();
+	const void ListDrivers(vector<RString>& drivers);
+	const RString FindDisplayName(const RString& driverName);
 
 	void BlinkCabinetLight( CabinetLight cl );
 	void BlinkGameButton( GameInput gi );

@@ -3,7 +3,7 @@
 #include "windows.h"
 #include "RageUtil.h"
 
-REGISTER_LIGHTS_DRIVER_CLASS(Win32Parallel);
+REGISTER_LIGHTS_DRIVER_CLASS(Win32Parallel, "Parallel");
 
 HINSTANCE hDLL = NULL;
 

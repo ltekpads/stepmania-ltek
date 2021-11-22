@@ -267,6 +267,15 @@ static void DisplayResolutionChoices( vector<RString> &out )
 	}
 }
 
+static void LightsDriverChoices( vector<RString> &out )
+{
+	vector<RString> fullNames;
+	LIGHTSMAN->ListDrivers(fullNames);
+	FOREACH(RString, fullNames, s) {
+		out.push_back(LIGHTSMAN->FindDisplayName(*s));
+	}
+}
+
 static void RequestedTheme( int &sel, bool ToSel, const ConfOption *pConfOption )
 {
 	vector<RString> choices;
@@ -667,6 +676,28 @@ static void SoundVolume( int &sel, bool ToSel, const ConfOption *pConfOption )
 	MoveMap( sel, pConfOption, ToSel, mapping, ARRAYLEN(mapping) );
 }
 
+static void LightsDriver(int& sel, bool ToSel, const ConfOption* pConfOption)
+{
+	vector<RString> drivers;
+	LIGHTSMAN->ListDrivers(drivers);
+
+	if (ToSel)
+	{
+		sel = 0;
+		const RString& current = PREFSMAN->m_sLightsDriver.Get();
+		for (unsigned i = 0; i < drivers.size(); ++i)
+			if (strcasecmp(drivers[i], current) == 0)
+			{
+				sel = i;
+				return;
+			}
+	}
+	else {
+		const RString& newDriver = drivers[sel];
+		PREFSMAN->m_sLightsDriver.Set(newDriver);
+	}
+}
+
 static void SoundVolumeAttract( int &sel, bool ToSel, const ConfOption *pConfOption )
 {
 	const float mapping[] = { 0.0f,0.1f,0.2f,0.3f,0.4f,0.5f,0.6f,0.7f,0.8f,0.9f,1.0f };
@@ -894,6 +925,10 @@ static void InitializeConfOptions()
 	ADD( ConfOption( "EditorShowBGChangesPlay",	MovePref<bool>,		"Hide","Show") );
 
 	ADD( ConfOption( "Invalid",			MoveNop,		"|Invalid option") );
+
+	ADD( ConfOption( "LightsDriver",		LightsDriver,		LightsDriverChoices) );
+	g_ConfOptions.back().m_sPrefName = "LightsDriver";
+	g_ConfOptions.back().m_iEffects = OPT_APPLY_LIGHTS;
 }
 
 // Get a mask of effects to apply if the given option changes.

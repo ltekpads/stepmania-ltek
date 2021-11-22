@@ -9,6 +9,7 @@ static const int MAX_OPTIONS=16;
 #define OPT_APPLY_SOUND					(1<<4)
 #define OPT_APPLY_SONG					(1<<5)
 #define OPT_APPLY_ASPECT_RATIO			(1<<6)
+#define OPT_APPLY_LIGHTS			(1<<7)
 
 struct ConfOption
 {

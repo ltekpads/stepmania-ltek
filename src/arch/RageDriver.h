@@ -14,14 +14,16 @@ typedef RageDriver *(*CreateRageDriverFn)();
 /* This is created and accessed during C++ static initialization; it must be a POD. */
 struct DriverList
 {
-	void Add( const istring &sName, CreateRageDriverFn pfn );
+	void Add( const istring &sName, const istring& sDisplayName, CreateRageDriverFn pfn );
 	RageDriver *Create( const RString &sDriverName );
+	const RString FindDisplayName( const RString &sDriverName );
 	map<istring, CreateRageDriverFn> *m_pRegistrees;
+	map<istring, istring> *m_pDisplayNames;
 };
 
 struct RegisterRageDriver
 {
-	RegisterRageDriver( DriverList *pDriverList, const istring &sName, CreateRageDriverFn pfn );
+	RegisterRageDriver( DriverList *pDriverList, const istring &sName, const istring& sDiaplyName, CreateRageDriverFn pfn );
 };
 
 #endif
