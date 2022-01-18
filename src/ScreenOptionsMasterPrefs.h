@@ -39,7 +39,7 @@ struct ConfOption
 	int GetEffects() const;
 
 	ConfOption( const char *n, MoveData_t m,
-		const char *c0=NULL, const char *c1=NULL, const char *c2=NULL, const char *c3=NULL, const char *c4=NULL, const char *c5=NULL, const char *c6=NULL, const char *c7=NULL, const char *c8=NULL, const char *c9=NULL, const char *c10=NULL, const char *c11=NULL, const char *c12=NULL, const char *c13=NULL, const char *c14=NULL, const char *c15=NULL, const char *c16=NULL, const char *c17=NULL, const char *c18=NULL, const char *c19=NULL )
+		const char *c0=NULL, const char *c1=NULL, const char *c2=NULL, const char *c3=NULL, const char *c4=NULL, const char *c5=NULL, const char *c6=NULL, const char *c7=NULL, const char *c8=NULL, const char *c9=NULL, const char *c10=NULL, const char *c11=NULL, const char *c12=NULL, const char *c13=NULL, const char *c14=NULL, const char *c15=NULL, const char *c16=NULL, const char *c17=NULL, const char *c18=NULL, const char *c19=NULL, const char* c20 = NULL, const char* c21 = NULL, const char* c22 = NULL, const char* c23 = NULL, const char* c24 = NULL, const char* c25 = NULL, const char* c26 = NULL, const char* c27 = NULL, const char* c28 = NULL, const char* c29 = NULL, const char* c30 = NULL, const char* c31 = NULL, const char* c32 = NULL, const char* c33 = NULL)
 	{
 		name = n;
 		m_sPrefName = name; // copy from name (not n), to allow refcounting
@@ -48,7 +48,7 @@ struct ConfOption
 		m_iEffects = 0;
 		m_bAllowThemeItems = true;
 #define PUSH( c )	if(c) names.push_back(c);
-		PUSH(c0);PUSH(c1);PUSH(c2);PUSH(c3);PUSH(c4);PUSH(c5);PUSH(c6);PUSH(c7);PUSH(c8);PUSH(c9);PUSH(c10);PUSH(c11);PUSH(c12);PUSH(c13);PUSH(c14);PUSH(c15);PUSH(c16);PUSH(c17);PUSH(c18);PUSH(c19);
+		PUSH(c0); PUSH(c1); PUSH(c2); PUSH(c3); PUSH(c4); PUSH(c5); PUSH(c6); PUSH(c7); PUSH(c8); PUSH(c9); PUSH(c10); PUSH(c11); PUSH(c12); PUSH(c13); PUSH(c14); PUSH(c15); PUSH(c16); PUSH(c17); PUSH(c18); PUSH(c19); PUSH(c20); PUSH(c21); PUSH(c22); PUSH(c23); PUSH(c24); PUSH(c24); PUSH(c25); PUSH(c26); PUSH(c27); PUSH(c28); PUSH(c29); PUSH(c30); PUSH(c31); PUSH(c32); PUSH(c33);
 	}
 	void AddOption( const RString &sName ) { PUSH(sName); }
 #undef PUSH

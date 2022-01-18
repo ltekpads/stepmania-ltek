@@ -149,6 +149,16 @@ XToString( GamplayButtonBlinkMode );
 StringToX( GamplayButtonBlinkMode );
 LuaXType( GamplayButtonBlinkMode );
 
+static const char* LightsBehaviorModeNames[] = {
+	"Off",
+	"Autogen",
+	"OnNote",
+	"EveryBeat",
+};
+XToString(LightsBehaviorMode);
+StringToX(LightsBehaviorMode);
+LuaXType(LightsBehaviorMode);
+
 bool g_bAutoRestart = false;
 #ifdef DEBUG
 # define TRUE_IF_DEBUG true

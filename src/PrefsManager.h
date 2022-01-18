@@ -132,6 +132,17 @@ enum GamplayButtonBlinkMode
 	GamplayButtonBlinkMode_Invalid
 };
 
+enum LightsBehaviorMode
+{
+	LBM_Off,
+	LBM_Autogen,
+	LBM_OnNote,
+	LBM_EveryBeat,
+	NUM_LightsBehaviorMode,
+	LightsBehaviorMode_Invalid
+};
+
+
 /** @brief Holds user-chosen preferences that are saved between sessions. */
 class PrefsManager
 {

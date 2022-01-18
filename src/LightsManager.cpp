@@ -19,6 +19,11 @@
 const RString DEFAULT_LIGHTS_DRIVER = "SystemMessage"; //use single driver by default so that the menu configuration screen is displayed correctly
 Preference<float>	g_fLightsFalloffSeconds( "LightsFalloffSeconds", 0.1f );
 Preference<float>	g_fLightsAheadSeconds( "LightsAheadSeconds", 0.05f );
+Preference<LightsBehaviorMode>	g_LightsCabinetMarquee("LightsCabinetMarquee", LBM_Autogen);
+Preference<LightsBehaviorMode>	g_LightsCabinetBass("LightsCabinetBass", LBM_Autogen);
+Preference<bool>	g_bLightsPhotosensitivityMode("LightsPhotosensitivityMode", false);
+Preference<float>	g_fLightsPhotosensitivityModeLimiterSeconds("LightsPhotosensitivityModeLimiterSeconds", 0.4f);
+
 static Preference<GamplayButtonBlinkMode>	g_BlinkGameplayButtonLightsOnNote( "BlinkGameplayButtonLightsOnNote", GBBM_DuringAutoPlay );
 
 static ThemeMetric<RString> GAME_BUTTONS_TO_SHOW( "LightsManager", "GameButtonsToShow" );

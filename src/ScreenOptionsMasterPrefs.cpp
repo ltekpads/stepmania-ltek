@@ -698,6 +698,35 @@ static void LightsDriver(int& sel, bool ToSel, const ConfOption* pConfOption)
 	}
 }
 
+static void LightsSeconds(int& sel, bool ToSel, const ConfOption* pConfOption)
+{
+	const float mapping[] = { 0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, 0.07f, 0.08f, 0.09f, 0.1f, 0.12f, 0.14f, 0.16f, 0.18f, 0.2f, 0.25f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.75f, 0.8f, 0.85f, 0.9f, 0.95f, 1.0f };
+	MoveMap(sel, pConfOption, ToSel, mapping, ARRAYLEN(mapping));
+}
+
+static void LightsStepsDifficulty(int& sel, bool ToSel, const ConfOption* pConfOption)
+{
+	const char* mapping[] = { "beginner", "easy", "medium", "hard", "challenge", "selected" };
+	ASSERT(pConfOption != NULL);
+	IPreference* pPref = IPreference::GetPreferenceByName(pConfOption->m_sPrefName);
+	ASSERT_M(pPref != NULL, pConfOption->m_sPrefName);
+
+	if (ToSel)
+	{
+		sel = 0;
+		const RString& current = pPref->ToString();
+		for (unsigned i = 0; i < ARRAYLEN(mapping); ++i)
+			if (strcasecmp(mapping[i], current) == 0)
+			{
+				sel = i;
+				return;
+			}
+	}
+	else {
+		pPref->FromString(mapping[sel]);
+	}
+}
+
 static void SoundVolumeAttract( int &sel, bool ToSel, const ConfOption *pConfOption )
 {
 	const float mapping[] = { 0.0f,0.1f,0.2f,0.3f,0.4f,0.5f,0.6f,0.7f,0.8f,0.9f,1.0f };
@@ -926,9 +955,24 @@ static void InitializeConfOptions()
 
 	ADD( ConfOption( "Invalid",			MoveNop,		"|Invalid option") );
 
+	//Lights options
 	ADD( ConfOption( "LightsDriver",		LightsDriver,		LightsDriverChoices) );
 	g_ConfOptions.back().m_sPrefName = "LightsDriver";
 	g_ConfOptions.back().m_iEffects = OPT_APPLY_LIGHTS;
+
+	ADD(ConfOption("LightsCabinetMarquee", MovePref<LightsBehaviorMode>, "Off", "Autogen", "On note", "On beat"));
+
+	ADD(ConfOption("LightsCabinetBass", MovePref<LightsBehaviorMode>, "Off", "Autogen", "On note", "On beat"));
+	ADD(ConfOption("LightsStepsDifficulty", LightsStepsDifficulty, "Beginner", "Easy", "Medium", "Hard", "Challenge", "Selected"));
+
+	ADD(ConfOption("LightsPhotosensitivityMode", MovePref<bool>, "Off", "On"));
+	ADD(ConfOption("LightsPhotosensitivityModeLimiterSeconds", LightsSeconds, "10ms", "20ms", "30ms", "40ms", "50ms", "60ms", "70ms", "80ms", "90ms", "100ms", "120ms", "140ms", "160ms", "180ms", "200ms", "250ms", "300ms", "350ms", "400ms", "450ms", "500ms", "550ms", "600ms", "650ms", "700ms", "750ms", "800ms", "850ms", "900ms", "950ms", "1000ms"));
+
+	ADD(ConfOption("LightsAheadSeconds", LightsSeconds, "10ms", "20ms", "30ms", "40ms", "50ms", "60ms", "70ms", "80ms", "90ms", "100ms", "120ms", "140ms", "160ms", "180ms", "200ms", "250ms", "300ms", "350ms", "400ms", "450ms", "500ms", "550ms", "600ms", "650ms", "700ms", "750ms", "800ms", "850ms", "900ms", "950ms", "1000ms"));
+	ADD(ConfOption("LightsFalloffSeconds", LightsSeconds, "10ms", "20ms", "30ms", "40ms", "50ms", "60ms", "70ms", "80ms", "90ms", "100ms", "120ms", "140ms", "160ms", "180ms", "200ms", "250ms", "300ms", "350ms", "400ms", "450ms", "500ms", "550ms", "600ms", "650ms", "700ms", "750ms", "800ms", "850ms", "900ms", "950ms", "1000ms"));
+
+	ADD(ConfOption("BlinkGameplayButtonLightsOnNote", MovePref<GamplayButtonBlinkMode>, "Never", "Always", "AutoPlay Only"));
+
 }
 
 // Get a mask of effects to apply if the given option changes.
