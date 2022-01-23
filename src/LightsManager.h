@@ -6,9 +6,14 @@
 #include "EnumHelper.h"
 #include "Preference.h"
 #include "RageTimer.h"
+#include "PrefsManager.h"
 
 extern Preference<float>	g_fLightsFalloffSeconds;
 extern Preference<float>	g_fLightsAheadSeconds;
+extern Preference<LightsBehaviorMode>	g_LightsCabinetMarquee;
+extern Preference<LightsBehaviorMode>	g_LightsCabinetBass;
+extern Preference<bool>	g_bLightsPhotosensitivityMode;
+extern Preference<float>	g_fLightsPhotosensitivityModeLimiterSeconds;
 
 enum CabinetLight
 {
