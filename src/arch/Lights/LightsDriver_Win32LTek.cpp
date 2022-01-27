@@ -4,8 +4,8 @@
 #include "RageUtil.h"
 
 REGISTER_LIGHTS_DRIVER_CLASS(Win32LTek, "L-Tek");
-const int Vid = 0x483;
-const int Pid = 0x5711;
+const int Vid = 0x03EB;
+const int Pid = 0x8004;
 const int HidCollection = 2;
 const int ReportTypeSetLights = 10;
 
