@@ -51,8 +51,9 @@ LuaDeclareType( LightsMode );
 
 enum LifebarMode
 {
-	LIFEBARMODE_PERCENTAGE,
-	LIFEBARMODE_NUMERIC,
+	LIFEBARMODE_NORMAL,
+	LIFEBARMODE_SURVIVAL,
+	LIFEBARMODE_BATTERY,
 	NUM_LifebarMode,
 	LifebarMode_Invalid
 };
@@ -69,7 +70,7 @@ struct LightsState
 {
 	bool m_bCabinetLights[NUM_CabinetLight];
 	bool m_bGameButtonLights[NUM_GameController][NUM_GameButton];
-	bool m_bMenuButtonLights[NUM_GameController][GAME_BUTTON_SELECT+1];
+	bool m_bMenuButtonLights[NUM_GameController][GAME_BUTTON_BACK+1];
 
 	LifebarState m_cLifeBarLights[NUM_GameController];
 

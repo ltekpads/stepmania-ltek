@@ -203,7 +203,7 @@ void LifeMeterBattery::BroadcastLifeChanged(bool lost_life)
 	msg.SetParam("LifeMeter", LuaReference::CreateFromPush(*this));
 	msg.SetParam("LivesLeft", GetLivesLeft());
 	msg.SetParam("LostLife", lost_life);
-	LIGHTSMAN->NotifyLifeChanged(m_pPlayerState->m_PlayerNumber, LIFEBARMODE_NUMERIC, GetLivesLeft());
+	LIGHTSMAN->NotifyLifeChanged(m_pPlayerState->m_PlayerNumber, LIFEBARMODE_BATTERY, GetLivesLeft());
 	MESSAGEMAN->Broadcast(msg);
 }
 
@@ -254,7 +254,7 @@ void LifeMeterBattery::Refresh()
 		m_textNumLives.SetVisible(false);
 	}
 	//update m_sprBattery
-	LIGHTSMAN->NotifyLifeChanged(m_pPlayerState->m_PlayerNumber, LIFEBARMODE_NUMERIC, GetLivesLeft());
+	LIGHTSMAN->NotifyLifeChanged(m_pPlayerState->m_PlayerNumber, LIFEBARMODE_BATTERY, GetLivesLeft());
 }
 
 int LifeMeterBattery::GetTotalLives()

@@ -51,20 +51,68 @@ static RageTimer reconnectTimer;
 char LifebarStateToByte(const LifebarState& state)
 {
 	if (!state.present)
-		return 255;
-	if (state.mode == LIFEBARMODE_PERCENTAGE)
+		return 0;
+	if (state.mode == LIFEBARMODE_NORMAL)
 		return state.percent;
 
-	return 100 + state.lives;
+	return state.lives;
 }
 
 char PackArray(const bool* values, int length)
 {
-	ASSERT(length < 8);
+	ASSERT(length <= 8);
 	char result = 0;
 	for (int a = 0; a < length; a++)
 		result |= (values[a] ? 1 << a : 0);
 	return result;
+}
+
+char PackGameButtons(const bool* gameButtonLights)
+{
+	//left, right, up, down, up-left, up-right, down-left, down-right
+	bool ltekOrder[] =
+	{
+		gameButtonLights[DANCE_BUTTON_LEFT],
+		gameButtonLights[DANCE_BUTTON_RIGHT],
+		gameButtonLights[DANCE_BUTTON_UP],
+		gameButtonLights[DANCE_BUTTON_DOWN],
+		gameButtonLights[PUMP_BUTTON_UPLEFT],
+		gameButtonLights[PUMP_BUTTON_UPRIGHT],
+		gameButtonLights[PUMP_BUTTON_DOWNLEFT],
+		gameButtonLights[PUMP_BUTTON_DOWNRIGHT],
+	};
+	return PackArray(ltekOrder, 8);
+}
+
+LTekLifebarType LifebarStateToMode(const LifebarState& state)
+{
+	if (!state.present)
+		return LTLT_NOT_PRESENT;
+	if (state.mode == LIFEBARMODE_NORMAL)
+		return LTLT_NORMAL;
+	if (state.mode == LIFEBARMODE_BATTERY)
+		return LTLT_BATTERY;
+	if (state.mode == LIFEBARMODE_SURVIVAL)
+		return LTLT_SURVIVAL;
+
+	return LTLT_NORMAL;
+}
+
+char PackSystemButtons(const bool* gameButtonLights)
+{
+	//center, menu left, menu right, menu up, mnenu down, start, back, select
+	bool ltekOrder[] =
+	{
+		gameButtonLights[PUMP_BUTTON_CENTER],
+		gameButtonLights[GAME_BUTTON_MENULEFT],
+		gameButtonLights[GAME_BUTTON_MENURIGHT],
+		gameButtonLights[GAME_BUTTON_MENUUP],
+		gameButtonLights[GAME_BUTTON_MENUDOWN],
+		gameButtonLights[GAME_BUTTON_START],
+		gameButtonLights[GAME_BUTTON_BACK],
+		gameButtonLights[GAME_BUTTON_SELECT],
+	};
+	return PackArray(ltekOrder, 8);
 }
 
 void LightsDriver_Win32LTek::Set( const LightsState *ls )
@@ -87,13 +135,15 @@ void LightsDriver_Win32LTek::Set( const LightsState *ls )
 	lights->beat = ls->m_beat;
 	lights->command = LTekCommand::SET_LIGHTS;
 	lights->commandFlags = 0;
-	lights->lifeBarP1 = LifebarStateToByte(ls->m_cLifeBarLights[0]);
-	lights->lifeBarP2 = LifebarStateToByte(ls->m_cLifeBarLights[1]);
+	lights->lifeBarP1Type= LifebarStateToMode(ls->m_cLifeBarLights[0]);
+	lights->lifeBarP1Value = LifebarStateToByte(ls->m_cLifeBarLights[0]);
+	lights->lifeBarP2Type = LifebarStateToMode(ls->m_cLifeBarLights[1]);
+	lights->lifeBarP2Value = LifebarStateToByte(ls->m_cLifeBarLights[1]);
 	lights->lightsCabinet = PackArray(ls->m_bCabinetLights, NUM_CabinetLight);
-	lights->lightsP1Game = PackArray(ls->m_bGameButtonLights[0] + DANCE_BUTTON_LEFT, 6);
-	lights->lightsP1System = PackArray(ls->m_bGameButtonLights[0], 6);
-	lights->lightsP2Game = PackArray(ls->m_bGameButtonLights[1] + DANCE_BUTTON_LEFT, 6);
-	lights->lightsP2System = PackArray(ls->m_bGameButtonLights[1], 6);
+	lights->lightsP1Game = PackGameButtons(ls->m_bGameButtonLights[0]);
+	lights->lightsP1System = PackSystemButtons(ls->m_bGameButtonLights[0]);
+	lights->lightsP2Game = PackGameButtons(ls->m_bGameButtonLights[1]);
+	lights->lightsP2System = PackSystemButtons(ls->m_bGameButtonLights[1]);
 
 	if (!m_pDevice->m_IO.write((char*)&report, sizeof(HidReport<LTekLightsReport>)))
 	{

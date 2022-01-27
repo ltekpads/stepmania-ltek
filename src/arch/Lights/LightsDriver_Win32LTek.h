@@ -21,6 +21,25 @@ enum LTekCommand : char
 	SET_LIGHTS = 1,
 };
 
+#define MAKE_LIFEBAR(number) (number << 1) | 1
+
+enum LTekLifebarType : char
+{
+	LTLT_NOT_PRESENT = 0,
+	LTLT_NORMAL = MAKE_LIFEBAR(0),
+	LTLT_NO_RECOVERY = MAKE_LIFEBAR(1),
+	LTLT_SURVIVAL = MAKE_LIFEBAR(2),
+	LTLT_BATTERY = MAKE_LIFEBAR(3),
+	LTLT_HAZARD = MAKE_LIFEBAR(4),
+	LTLT_RAVE_1 = MAKE_LIFEBAR(5),
+	LTLT_RAVE_2 = MAKE_LIFEBAR(6),
+	LTLT_RAVE_3 = MAKE_LIFEBAR(7),
+	LTLT_HARD = MAKE_LIFEBAR(8),
+	LTLT_EX_HARD = MAKE_LIFEBAR(9),
+	LTLT_GROOVE_80 = MAKE_LIFEBAR(10),
+	LTLT_GROOVE_60 = MAKE_LIFEBAR(11),
+};
+
 typedef struct LTekLightsReport {
 	/* command number, 1 = set lights */
 	LTekCommand command;
@@ -34,7 +53,7 @@ typedef struct LTekLightsReport {
 	char reserved2;
 	/* player1 game input lights on first six bits of a value: left, right, up, down, up-left, up-rigtht */
 	char lightsP1Game;
-	/* player1 system input lights on first 5 bits: left, right, up, down, start */
+	/* player1 center, system input lights on  later bits: left, right, up, down, start, back, select */
 	char lightsP1System;
 	char reserved3;
 	/* same as for p1 */
@@ -42,9 +61,11 @@ typedef struct LTekLightsReport {
 	/* same as for p1 */
 	char lightsP2System;
 	char reserved4;
-	char lifeBarP1;
-	char lifeBarP2;
-	char padding[64 - 14]; //hid report should be 64 bytes long
+	LTekLifebarType lifeBarP1Type;
+	char lifeBarP1Value;
+	LTekLifebarType lifeBarP2Type;
+	char lifeBarP2Value;
+	char padding[64 - 16]; //hid report should be 64 bytes long
 } LTekLightsReport;
 
 #endif

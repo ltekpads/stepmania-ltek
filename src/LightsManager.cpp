@@ -202,8 +202,8 @@ void LightsManager::NotifyLifeChanged( PlayerNumber pn, LifebarMode mode, float 
 	ASSERT(mode < NUM_LightsMode );
 	ASSERT(value >= 0 && value <= 100);
 	m_Lifebars[pn].mode = mode;
-	m_Lifebars[pn].lives = mode == LIFEBARMODE_NUMERIC ? value : 0;
-	m_Lifebars[pn].percent = mode == LIFEBARMODE_PERCENTAGE ? FindLifebarLightValue(value) : 0;
+	m_Lifebars[pn].lives = mode == LIFEBARMODE_BATTERY ? value : 0;
+	m_Lifebars[pn].percent = mode == LIFEBARMODE_NORMAL || mode == LIFEBARMODE_SURVIVAL ? FindLifebarLightValue(value) : 0;
 }
 
 void LightsManager::Update( float fDeltaTime )
@@ -488,7 +488,7 @@ void LightsManager::Update( float fDeltaTime )
 					bool bOn = INPUTMAPPER->IsBeingPressed( GameInput(gc,gb) );
 					m_LightsState.m_bGameButtonLights[gc][gb] = bOn;
 				}
-				for (int a = GAME_BUTTON_MENULEFT; a <= GAME_BUTTON_SELECT; a++)
+				for (int a = GAME_BUTTON_MENULEFT; a <= GAME_BUTTON_BACK; a++)
 				{
 					bool bOn = INPUTMAPPER->IsBeingPressed(GameInput(gc, (GameButton)a));
 					m_LightsState.m_bMenuButtonLights[gc][a] = bOn;
