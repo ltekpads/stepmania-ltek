@@ -956,7 +956,9 @@ void SplitNoteGroup(const NoteData& noteData, const NoteGroup& group, vector<Not
 
 		ASSERT(current.count >= 10 && current.count < 18);
 
-		const int secondGroupSize = current.count >= 12 ? 9 : 7;
+		const int secondGroupSize = current.count == 10
+			? 8
+			: current.count >= 12 ? 9 : 7;
 
 		SplitGroup(noteData, current, current.count - secondGroupSize, a, b);
 		result.push_back(a);
@@ -1005,18 +1007,23 @@ void AddPattern(vector<LightPattern>& target, const char* pattern)
 	}
 }
 
-void BuildOddSet(vector<LightPattern>& target)
+void BuildTapSet(vector<LightPattern>& target)
 {
 	//comma separated row patterns/ each number represents pattern duration (1=single blink, longer = hold)
-	AddPattern(target, "11  ,  11,11  ,  11,11  ,  11,11  ,  11,11  ");
-	AddPattern(target, "  11,11  ,  11,11  ,  11,11  ,  11,11  ,  11");
-	AddPattern(target, "1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 ");
-	AddPattern(target, " 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1");
-	AddPattern(target, " 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ");
-	AddPattern(target, "1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1");
+	AddPattern(target, "11  ,  11,11  ,  11,11  ,  11,11  ,  11,11  ,  11");
+	AddPattern(target, "  11,11  ,  11,11  ,  11,11  ,  11,11  ,  11,11  ");
+	AddPattern(target, "1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1");
+	AddPattern(target, " 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 ");
+	AddPattern(target, " 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1");
+	AddPattern(target, "1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ");
+
+	AddPattern(target, "11  ,1  1,  11, 11 ,11  ,1  1,  11, 11 ,11  ,1  1");
+	AddPattern(target, "  11,1  1,11  , 11 ,  11,1  1,11  , 11 ,  11,1  1");
+	AddPattern(target, "1 1 ,11  , 1 1,  11,1 1 ,11  , 1 1,  11,1 1 , 1 1");
+	AddPattern(target, " 1 1, 11 ,1 1 ,1  1, 1 1, 11 ,1 1 ,1  1, 1 1,1 1 ");
 }
 
-void BuildEvenSet(vector<LightPattern>& target)
+void BuildHoldSet(vector<LightPattern>& target)
 {
 	AddPattern(target, " 1  ,13  ,2 1 ,  11, 1  ,13  ,2 1 ,  11");
 	AddPattern(target, " 1  , 31 ,1 2 ,1  1, 1  , 31 ,1 2 ,1  1");
@@ -1026,11 +1033,11 @@ void BuildEvenSet(vector<LightPattern>& target)
 void InitAutogenPatterns()
 {
 	if (PatternsA.size() == 0)
-		BuildOddSet(PatternsA);
+		BuildTapSet(PatternsA);
 	if (PatternsB.size() > 0)
 		return;
-	BuildOddSet(PatternsB);
-	BuildEvenSet(PatternsB);
+	BuildTapSet(PatternsB);
+	//BuildHoldSet(PatternsB); //hold patterns disabled for now
 }
 
 enum LightPatternSelection
@@ -1056,6 +1063,15 @@ void FindGroupOffsets(const NoteData& noteData, const NoteGroup& group, vector<i
 	}
 }
 
+bool LightRowsEqual(const LightRow& first, const LightRow& second)
+{
+	const int size = ARRAYLEN(first.duration);
+	for (int a = 0; a < size; a++)
+		if (first.duration[a] != second.duration[a])
+			return false;
+	return true;
+}
+
 void GenerateLightPatterns(const NoteData& in, NoteData& out)
 {
 	InitAutogenPatterns();
@@ -1076,6 +1092,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 
 	NoteGroup* lastGroup = nullptr;
 	LightPattern* lastPattern = nullptr;
+	int lastStartIndex = 0;
 
 	for (auto& group : splitGroups)
 	{
@@ -1084,6 +1101,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 
 		vector<int> offsets;
 		FindGroupOffsets(normalized, group, offsets);
+		ASSERT(offsets.size() == group.count);
 
 		if (group.count == 1 || group.jumpGroup)
 		{
@@ -1092,6 +1110,8 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 					out.SetTapNote(a, offsets[offset], TAP_ORIGINAL_TAP);
 
 			lastGroup = &group;
+			lastPattern = nullptr;
+			lastStartIndex = 0;
 			continue;
 		}
 
@@ -1112,23 +1132,27 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 
 		if (patternSelection == LPS_Random || lastPattern == nullptr)
 			pattern = &patternSet[random(patternSet.size())];
-		else if (patternSelection == LPS_Repeat) {
+		else {
 			ASSERT(lastPattern != nullptr);
+			ASSERT(patternSelection == LPS_Mirror || patternSelection == LPS_Repeat);
 			pattern = lastPattern;
 		}
-		else {
-			ASSERT(patternSelection == LPS_Mirror);
-		}
+
+		//special case: 3 element note streams should always blink with all lights at end
+		const int BLINK_WITH_ALL_GROUP_SIZE = 3;
 
 		ASSERT(pattern != nullptr);
-		ASSERT(offsets.size() <= pattern->rows.size());
-		lastPattern = pattern;
+		const int startIndex = lastPattern == nullptr || lastGroup == nullptr || !LightRowsEqual(lastPattern->rows[lastStartIndex+lastGroup->count-1], pattern->rows[0]) || lastGroup->count == BLINK_WITH_ALL_GROUP_SIZE
+			? 0
+			: 1;
+
+		ASSERT(offsets.size() <= pattern->rows.size()+startIndex);
 
 		const auto& channelMapping = patternSelection != LPS_Mirror ? StandardMapping : MirroredMapping;
 
 		for (int offset = 0; offset < offsets.size(); offset++)
 		{
-			const auto& row = pattern->rows[offset];
+			const auto& row = pattern->rows[offset+startIndex];
 			for (int index=0; index < channelMapping.size(); index++)
 			{
 				const int tapLength = row.duration[channelMapping[index]];
@@ -1142,6 +1166,15 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 				}
 			}
 		}
+
+		if (offsets.size() == BLINK_WITH_ALL_GROUP_SIZE)
+		{
+			for (int a = 0; a < LIGHT_BASS_LEFT; a++)
+				out.SetTapNote(a, offsets[BLINK_WITH_ALL_GROUP_SIZE-1], TAP_ORIGINAL_TAP);
+		}
+
+		lastStartIndex = startIndex;
+		lastPattern = pattern;
 		lastGroup = &group;
 	}
 }
