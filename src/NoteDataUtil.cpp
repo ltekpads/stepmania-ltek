@@ -784,13 +784,13 @@ int FindTapsInRow(const NoteData& noteData, int row)
 
 int FindNoteStreamEnd(const NoteData& noteData, int start)
 {
-	const int jumpStream = FindTapsInRow(noteData, start) > 1;
+	const bool isJumpStream = FindTapsInRow(noteData, start) > 1;
 	int next = start;
 	if (!noteData.GetNextTapNoteRowForAllTracks(next))
 		return start;
 	if (HasNoteTypeAtRow(noteData, TapNoteType_HoldHead, next))
 		return start;
-	if (jumpStream != (FindTapsInRow(noteData, next) > 1))
+	if (isJumpStream != (FindTapsInRow(noteData, next) > 1))
 		return start;
 	const int streamSpacing = next - start;
 	if (streamSpacing > ROWS_PER_BEAT)
@@ -805,12 +805,14 @@ int FindNoteStreamEnd(const NoteData& noteData, int start)
 			return endNext;
 		if (HasNoteTypeAtRow(noteData, TapNoteType_HoldHead, endNextNext))
 			return endNext;
-		if (jumpStream != FindTapsInRow(noteData, endNextNext) > 1)
+		if (isJumpStream != (FindTapsInRow(noteData, endNextNext) > 1))
 			return endNext;
 		const int nextSpacing = endNextNext - endNext;
 		if (nextSpacing > ROWS_PER_BEAT)
 			return endNext;
-		if (nextSpacing != streamSpacing)
+		if (nextSpacing == ROWS_PER_BEAT && streamSpacing < ROWS_PER_BEAT)
+			return end;
+		if (streamSpacing == ROWS_PER_BEAT && nextSpacing < ROWS_PER_BEAT)
 			return end;
 
 		end = endNext;
