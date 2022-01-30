@@ -743,9 +743,11 @@ void NormalizeNotes(const NoteData& in, NoteData& out)
 				continue;
 			//hold notes should be shorter than original notes so that the light can blink on two adjacent hold sequence
 			const int note16th = ROWS_PER_BEAT / 4;
-			const int duration = row + tn.iDuration - note16th;
+			const int duration = tn.iDuration - note16th;
 			if(duration > 0)
-				out.AddHoldNote(track, row, row + tn.iDuration, tn.subType == TapNoteSubType_Hold ? TAP_ORIGINAL_HOLD_HEAD : TAP_ORIGINAL_ROLL_HEAD);
+				out.AddHoldNote(track, row, row + duration, tn.subType == TapNoteSubType_Hold ? TAP_ORIGINAL_HOLD_HEAD : TAP_ORIGINAL_ROLL_HEAD);
+			else
+				out.SetTapNote(track, row, TAP_ORIGINAL_TAP);
 		}
 	}
 
@@ -781,6 +783,33 @@ int FindTapsInRow(const NoteData& noteData, int row)
 			count++;
 	}
 	return count;
+}
+
+struct HoldInfo
+{
+	int track;
+	int startOffset;
+	int duration;
+	int endOffset;
+	bool roll;
+};
+
+void FindHoldsAtRow(const NoteData& noteData, int row, vector<HoldInfo>& result)
+{
+	for (int track = 0; track < noteData.GetNumTracks(); track++)
+	{
+		const TapNote& tn = noteData.GetTapNote(track, row);
+		if (tn.type != TapNoteType_HoldHead)
+			continue;
+
+		HoldInfo info;
+		info.duration = tn.iDuration;
+		info.startOffset = row;
+		info.endOffset = row + tn.iDuration;
+		info.roll = tn.subType == TapNoteSubType_Roll;
+		info.track = track;
+		result.push_back(info);
+	}
 }
 
 int FindNoteStreamEnd(const NoteData& noteData, int start)
@@ -1058,7 +1087,24 @@ void FindGroupOffsets(const NoteData& noteData, const NoteGroup& group, vector<i
 	int offset = group.startOffset;
 	for (int a = 1; a < group.count; a++)
 	{
-		noteData.GetNextTapNoteRowForAllTracks(offset);
+		const bool hasOffset = noteData.GetNextTapNoteRowForAllTracks(offset);
+		ASSERT(hasOffset);
+		result.push_back(offset);
+	}
+}
+
+void FindTapOffsetsInRange(const NoteData& noteData, int startOffset, int endOffset, vector<int>& result)
+{
+	result.clear();
+	if(HasNoteTypeAtRow(noteData, TapNoteType_Tap, startOffset))
+		result.push_back(startOffset);
+	int offset = startOffset;
+	while (true)
+	{
+		if (!noteData.GetNextTapNoteRowForAllTracks(offset))
+			return;
+		if (offset > endOffset)
+			return;
 		result.push_back(offset);
 	}
 }
@@ -1072,11 +1118,234 @@ bool LightRowsEqual(const LightRow& first, const LightRow& second)
 	return true;
 }
 
+void HoldToLightNoteTrackIndices(int holdTrack, vector<int>& outNoteTracks)
+{
+	ASSERT(holdTrack >= 0 && holdTrack < 4);
+	if (holdTrack == 0)
+	{
+		outNoteTracks.push_back(0);
+		outNoteTracks.push_back(1);
+	}
+	if (holdTrack == 1)
+	{
+		outNoteTracks.push_back(1);
+		outNoteTracks.push_back(2);
+	}
+	if (holdTrack == 2)
+	{
+		outNoteTracks.push_back(3);
+		outNoteTracks.push_back(0);
+	}
+	if (holdTrack == 3)
+	{
+		outNoteTracks.push_back(3);
+		outNoteTracks.push_back(2);
+	}
+}
+
+struct HoldTrackInfo
+{
+	int track;
+	bool roll;
+};
+
+struct HoldSection
+{
+	int startOffset;
+	int endOffset;
+	vector<HoldTrackInfo> tracks;
+};
+
+int ShortestHoldEnd(const vector<HoldInfo>& holds)
+{
+	ASSERT(holds.size() > 0);
+	int end = INT_MAX;
+	for (const auto& hold : holds)
+		end = min(end, hold.endOffset);
+	return end;
+}
+
+void FindHoldSections(const NoteData& noteData, const NoteGroup& group, vector<HoldSection>& result)
+{
+	ASSERT(group.holdGroup);
+	vector<HoldInfo> holds;
+
+	int sectionStart = group.startOffset;
+	while (sectionStart < group.endOffset)
+	{
+		for (const auto& hold : holds)
+			ASSERT(hold.startOffset == sectionStart);
+		FindHoldsAtRow(noteData, sectionStart, holds);
+		ASSERT(holds.size() >= 1);
+
+		const int nearestEnd = ShortestHoldEnd(holds);
+
+		int nextHold;
+		const int sectionEnd = FindNextRowWithType(noteData, sectionStart, group.endOffset, TapNoteType_HoldHead, nextHold)
+			? nextHold
+			: group.endOffset;
+
+		const int splitPoint = min(sectionEnd, nearestEnd);
+
+		HoldSection section;
+		section.startOffset = sectionStart;
+		section.endOffset = splitPoint;
+
+		vector<HoldInfo> continuedHolds;
+		for (const auto& hold : holds)
+		{
+			ASSERT(hold.endOffset >= splitPoint);
+
+			HoldTrackInfo info;
+			info.roll = hold.roll;
+			info.track = hold.track;
+			section.tracks.push_back(info);
+
+			if (hold.endOffset > splitPoint)
+			{
+				HoldInfo continuation;
+				continuation.roll = hold.roll;
+				continuation.duration = hold.endOffset - splitPoint;
+				continuation.endOffset = hold.endOffset;
+				continuation.startOffset = splitPoint;
+				continuation.track = hold.track;
+				continuedHolds.push_back(continuation);
+			}
+		}
+
+		sectionStart = splitPoint;
+		result.push_back(section);
+		holds = continuedHolds;
+	}
+}
+
+struct HoldLightSection
+{
+	int holdTrackExclusive;
+	bool holdAll;
+	bool roll;
+	int startOffset;
+	int endOffset;
+};
+
+bool HasRoll(const vector<HoldTrackInfo>& tracks)
+{
+	for (const auto& track : tracks)
+		if (track.roll)
+			return true;
+	return false;
+}
+
+void BuildHoldLightSections(const vector<HoldSection>& holds, vector<HoldLightSection>& result)
+{
+	HoldLightSection* lastSection = nullptr;
+	HoldLightSection current;
+	for(int index=0;index<holds.size();index++)
+	{
+		const auto& hold = holds[index];
+		const bool holdAll = hold.tracks.size() > 1;
+		const bool hasRoll = HasRoll(hold.tracks);
+
+		if (lastSection != nullptr && lastSection->holdAll && holdAll && lastSection->roll == hasRoll)
+		{
+			current.endOffset = hold.endOffset;
+			continue;
+		}
+
+		if (index > 0)
+			result.push_back(current);
+
+		current.startOffset = hold.startOffset;
+		current.holdAll = holdAll;
+		current.holdTrackExclusive = !holdAll ? hold.tracks[0].track : -1;
+		current.endOffset = hold.endOffset;
+		current.roll = HasRoll(hold.tracks);
+	}
+	if(holds.size() > 0)
+		result.push_back(current);
+}
+
+struct HoldTrack
+{
+	int track;
+	int startOffset;
+	int endOffset;
+};
+
+void LightSectionsToHoldTracks(const vector<HoldLightSection>& sections, vector<HoldTrack>& result)
+{
+	vector<HoldTrack> tracks;
+	for (int a = 0; a < LIGHT_BASS_LEFT; a++) {
+		HoldTrack track;
+		track.track = a;
+		track.startOffset = -1;
+		track.endOffset = -1;
+		tracks.push_back(track);
+	}
+
+	for (const auto& section : sections)
+	{
+		if (section.roll)
+		{
+			for (auto& track : tracks)
+			{
+				if (track.startOffset < 0)
+					continue;
+				ASSERT(track.endOffset > 0);
+				result.push_back(track);
+				track.startOffset = -1;
+				track.endOffset = -1;
+			}
+			continue;
+		}
+
+		vector<int> noteTracks;
+		if(!section.holdAll)
+			HoldToLightNoteTrackIndices(section.holdTrackExclusive, noteTracks);
+		else
+		{
+			noteTracks.clear();
+			for (int a = 0; a < tracks.size(); a++)
+				noteTracks.push_back(a);
+		}
+
+		for (const auto& trackIndex : noteTracks)
+		{
+			//begin or extend existing hold light
+			auto& item = tracks[trackIndex];
+			if (item.startOffset < 0)
+				item.startOffset = section.startOffset;
+			ASSERT(item.endOffset <= section.endOffset);
+			item.endOffset = section.endOffset;
+		}
+
+		for (auto& track : tracks)
+		{
+			if (track.startOffset < 0)
+				continue;
+			ASSERT(track.endOffset > 0);
+			if (track.endOffset > section.startOffset)
+				continue;
+			result.push_back(track);
+			track.startOffset = -1;
+			track.endOffset = -1;
+		}
+	}
+
+	for (auto& track : tracks)
+	{
+		if (track.startOffset < 0)
+			continue;
+		ASSERT(track.endOffset > 0);
+		result.push_back(track);
+	}
+}
+
 void GenerateLightPatterns(const NoteData& in, NoteData& out)
 {
 	InitAutogenPatterns();
 	RandomGen random(FindHash(in));
-
+	
 	NoteData reduced(in);
 	ReduceTracks(reduced, LIGHT_BASS_LEFT);
 
@@ -1097,7 +1366,54 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 	for (auto& group : splitGroups)
 	{
 		if (group.holdGroup)
-			continue; //holds will be added later
+		{
+			//blink with every light on each tap. Some of these taps will be overwritten by holds and rolls
+			vector<int> offsets;
+			FindTapOffsetsInRange(normalized, group.startOffset, group.endOffset, offsets);
+			for (const auto& offset : offsets)
+			{
+				for (int a = 0; a < LIGHT_BASS_LEFT; a++)
+					out.SetTapNote(a, offset, TAP_ORIGINAL_TAP);
+			}
+
+			vector<HoldSection> sections;
+			FindHoldSections(normalized, group, sections);
+			vector<HoldLightSection> holdLights;
+			BuildHoldLightSections(sections, holdLights);
+
+			for (const auto& holdLight : holdLights)
+			{
+				vector<int> noteTracks;
+				if (!holdLight.holdAll)
+					HoldToLightNoteTrackIndices(holdLight.holdTrackExclusive, noteTracks);
+				else
+				{
+					noteTracks.clear();
+					for (int a = 0; a < LIGHT_BASS_LEFT; a++)
+						noteTracks.push_back(a);
+				}
+
+				for (const auto& trackIndex : noteTracks)
+					out.ClearRangeForTrack(holdLight.startOffset, holdLight.endOffset, trackIndex);
+
+				if (holdLight.roll)
+				{
+					const int spacing = ROWS_PER_BEAT / 2;
+					const int displacement = holdLight.startOffset % spacing;
+					for (int offset = holdLight.startOffset + (displacement > 0 ? spacing - displacement : 0); offset < holdLight.endOffset; offset += spacing)
+					{
+						for (const auto& trackIndex : noteTracks)
+							out.SetTapNote(trackIndex, offset, TAP_ORIGINAL_TAP);
+					}
+				}
+			}
+
+			vector<HoldTrack> holdTracks;
+			LightSectionsToHoldTracks(holdLights, holdTracks);
+			for (const auto& track : holdTracks)
+				out.AddHoldNote(track.track, track.startOffset, track.endOffset, TAP_ORIGINAL_HOLD_HEAD);
+			continue;
+		}
 
 		vector<int> offsets;
 		FindGroupOffsets(normalized, group, offsets);
