@@ -731,11 +731,12 @@ int FindHash(const NoteData& in)
 
 void NormalizeNotes(const NoteData& in, NoteData& out)
 {
+	out.SetNumTracks(in.GetNumTracks());
 	for (int track = 0; track < in.GetNumTracks();track++)
 	{
 		FOREACH_NONEMPTY_ROW_IN_TRACK(in, track, row)
 		{
-			const TapNote& tn = out.GetTapNote(track, row);
+			const TapNote& tn = in.GetTapNote(track, row);
 			if (tn.type == TapNoteType_Tap)
 				out.SetTapNote(track, row, TAP_ORIGINAL_TAP);
 			if (tn.type != TapNoteType_HoldHead)
@@ -789,7 +790,7 @@ int FindNoteStreamEnd(const NoteData& noteData, int start)
 		return start;
 	if (HasNoteTypeAtRow(noteData, TapNoteType_HoldHead, next))
 		return start;
-	if (jumpStream != FindTapsInRow(noteData, next) > 1)
+	if (jumpStream != (FindTapsInRow(noteData, next) > 1))
 		return start;
 	const int streamSpacing = next - start;
 	if (streamSpacing > ROWS_PER_BEAT)
@@ -1057,7 +1058,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 	NoteData reduced(in);
 	ReduceTracks(reduced, LIGHT_BASS_LEFT);
 
-	NoteData normalized(reduced);
+	NoteData normalized;
 	NormalizeNotes(reduced, normalized);
 
 	vector<NoteGroup> allGroups;
