@@ -757,6 +757,7 @@ struct NoteGroup
 	int startOffset;
 	int endOffset;
 	int count;
+	bool jumpGroup;
 };
 
 bool HasNoteTypeAtRow(const NoteData& noteData, TapNoteType type, int row)
@@ -907,6 +908,7 @@ void BuildNoteGroups(const NoteData& noteData, vector<NoteGroup>& result)
 		group.holdGroup = HasNoteTypeAtRow(noteData, TapNoteType_HoldHead, row);
 		group.endOffset = group.holdGroup ? FindHoldEnd(noteData, row) : FindNoteStreamEnd(noteData, row);
 		group.count = RowTapCountInRange(noteData, group.startOffset, group.endOffset);
+		group.jumpGroup = !group.holdGroup && (FindTapsInRow(noteData, row) > 1);
 		result.push_back(group);
 		row = group.endOffset;
 	}
@@ -921,12 +923,14 @@ void SplitGroup(const NoteData& noteData, const NoteGroup& source, int splitCoun
 	resultFirst.startOffset = source.startOffset;
 	resultFirst.endOffset = splitEnd;
 	resultFirst.count = splitCount;
+	resultFirst.jumpGroup = source.jumpGroup;
 
 	resultSecond.holdGroup = false;
 	resultSecond.startOffset = splitEnd;
 	noteData.GetNextTapNoteRowForAllTracks(resultSecond.startOffset);
 	resultSecond.endOffset = source.endOffset;
 	resultSecond.count = source.count - splitCount;
+	resultSecond.jumpGroup = source.jumpGroup;
 }
 
 void SplitNoteGroup(const NoteData& noteData, const NoteGroup& group, vector<NoteGroup>& result)
@@ -1070,7 +1074,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 	for (auto& group : allGroups)
 		SplitNoteGroup(normalized, group, splitGroups);
 
-	int lastCount = -1;
+	NoteGroup* lastGroup = nullptr;
 	LightPattern* lastPattern = nullptr;
 
 	for (auto& group : splitGroups)
@@ -1078,10 +1082,16 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		if (group.holdGroup)
 			continue; //holds will be added later
 
-		if (group.count == 1)
+		vector<int> offsets;
+		FindGroupOffsets(normalized, group, offsets);
+
+		if (group.count == 1 || group.jumpGroup)
 		{
-			for (int a = 0; a < LIGHT_BASS_LEFT; a++)
-				out.SetTapNote(a, group.startOffset, TAP_ORIGINAL_TAP);
+			for (int offset = 0; offset < offsets.size(); offset++)
+				for (int a = 0; a < LIGHT_BASS_LEFT; a++)
+					out.SetTapNote(a, offsets[offset], TAP_ORIGINAL_TAP);
+
+			lastGroup = &group;
 			continue;
 		}
 
@@ -1089,7 +1099,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		auto& patternSet = group.count % 4 == 0 ? PatternsB : PatternsA;
 
 		LightPattern* pattern = nullptr;
-		if (lastCount == group.count)
+		if (lastGroup != nullptr && lastGroup->count == group.count && !lastGroup->jumpGroup)
 		{
 			int chance = random(100);
 			if (chance < 25)
@@ -1111,12 +1121,11 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		}
 
 		ASSERT(pattern != nullptr);
+		ASSERT(offsets.size() <= pattern->rows.size());
 		lastPattern = pattern;
 
 		const auto& channelMapping = patternSelection != LPS_Mirror ? StandardMapping : MirroredMapping;
-		vector<int> offsets;
-		FindGroupOffsets(normalized, group, offsets);
-		ASSERT(offsets.size() <= pattern->rows.size());
+
 		for (int offset = 0; offset < offsets.size(); offset++)
 		{
 			const auto& row = pattern->rows[offset];
@@ -1133,6 +1142,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 				}
 			}
 		}
+		lastGroup = &group;
 	}
 }
 
