@@ -3,50 +3,104 @@
 #include "windows.h"
 #include "RageUtil.h"
 
+struct VidPid { int vid; int pid; };
+const VidPid DeviceIds[]{ {0x03EB,0x800A}, {0x03EB,0x800B} };
+
 REGISTER_LIGHTS_DRIVER_CLASS(Win32LTek, "L-TEK");
-const int Vid = 0x03EB;
-const int Pid = 0x8004;
-const int HidCollection = 2;
 const int ReportTypeSetLights = 10;
 
-USBDevice* FindDevice()
+bool HasDevice(int vid, int pid, int index, const vector<DeviceInfo>& devices)
 {
-	USBDevice* device = new USBDevice;
-	if (device->Open(Vid, Pid, sizeof(HidReport<LTekLightsReport>), HidCollection-1, nullptr, USB_WRITE))
-		return device;
-	SAFE_DELETE(device);
-	return nullptr;
+	for (const auto& device : devices)
+	{
+		if (device.index == index && device.pid == pid && device.vid == device.vid)
+			return true;
+	}
+	return false;
+}
+
+bool TrySendReport(USBDevice* device, const HidReport<LTekLightsReport>& report);
+
+void FillDevices(int vid, int pid, vector<DeviceInfo>& target)
+{
+	int it = 0;
+	while (true)
+	{
+		int index = it++;
+		if (HasDevice(vid, pid, index, target))
+			continue;
+		USBDevice* device = new USBDevice;
+		if (!device->Open(vid, pid, sizeof(HidReport<LTekLightsReport>), index, nullptr, USB_WRITE))
+		{
+			SAFE_DELETE(device);
+			return;
+		}
+
+		HidReport<LTekLightsReport> report;
+		ZERO(report);
+		report.reportType = ReportTypeSetLights;
+		if (!TrySendReport(device, report))
+		{
+			SAFE_DELETE(device);
+			continue;
+		}
+		DeviceInfo info;
+		info.pid = pid;
+		info.vid = vid;
+		info.present = true;
+		info.index = index;
+		info.device = device;
+		target.push_back(info);
+	}
+}
+
+void LoadDevices(vector<DeviceInfo>& target)
+{
+	for (int a = 0; a < ARRAYLEN(DeviceIds); a++)
+		FillDevices(DeviceIds[a].vid, DeviceIds[a].pid, target);
+}
+
+void FreeDevice(DeviceInfo& device)
+{
+	if (!device.device)
+		return;
+	SAFE_DELETE(device.device);
+	device.device = nullptr;
+	device.present = false;
+}
+
+void FreeDevices(vector<DeviceInfo>& devices)
+{
+	for (auto& device : devices)
+		FreeDevice(device);
+	devices.clear();
 }
 
 static bool Check_Win32LTek()
 {
-	USBDevice* device = FindDevice();
-	bool available = device;
-	SAFE_DELETE(device);
+	vector<DeviceInfo> devices;
+	LoadDevices(devices);
+	bool available = devices.size() > 0;
+	FreeDevices(devices);
 	return available;
 }
 
 REGISTER_LIGHTS_DRIVER_AVAILABILITY_CHECK(Win32LTek);
 
+static RageTimer reconnectTimer;
+
+
 LightsDriver_Win32LTek::LightsDriver_Win32LTek()
 {
-	m_pDevice = FindDevice();
+	LoadDevices(m_devices);
+	reconnectTimer.Touch();
 }
 
 LightsDriver_Win32LTek::~LightsDriver_Win32LTek()
 {
-	FreeDevice();
+	FreeDevices(m_devices);
 }
 
-void LightsDriver_Win32LTek::FreeDevice()
-{
-	if (!m_pDevice)
-		return;
-	SAFE_DELETE(m_pDevice);
-	m_pDevice = nullptr;
-}
-
-static RageTimer reconnectTimer;
 
 char LifebarStateToByte(const LifebarState& state)
 {
@@ -115,15 +169,33 @@ char PackSystemButtons(const bool* gameButtonLights)
 	return PackArray(ltekOrder, 8);
 }
 
+bool TrySendReport(USBDevice* device, const HidReport<LTekLightsReport>& report)
+{
+	const HidReport<LTekLightsReport>* address = &report;
+	return device->m_IO.write((const char*)address, sizeof(HidReport<LTekLightsReport>));
+
+}
+
+bool FindInvalidDevice(const vector<DeviceInfo>& devices, int& index)
+{
+	for (int a = 0; a < devices.size(); a++)
+	{
+		if (!devices[a].present)
+		{
+			index = a;
+			return true;
+		}
+	}
+	return false;
+}
+
 void LightsDriver_Win32LTek::Set( const LightsState *ls )
 {
-	if (!m_pDevice)
+	if (reconnectTimer.Ago() > 1)
 	{
-		if(reconnectTimer.Ago() < 1)
-			return;
-		m_pDevice = FindDevice();
+		LoadDevices(m_devices);
 		reconnectTimer.Touch();
-		if (!m_pDevice)
+		if (m_devices.size() == 0)
 			return;
 	}
 
@@ -145,11 +217,20 @@ void LightsDriver_Win32LTek::Set( const LightsState *ls )
 	lights->lightsP2Game = PackGameButtons(ls->m_bGameButtonLights[1]);
 	lights->lightsP2System = PackSystemButtons(ls->m_bGameButtonLights[1]);
 
-	if (!m_pDevice->m_IO.write((char*)&report, sizeof(HidReport<LTekLightsReport>)))
+	for (auto& device : m_devices)
 	{
-		//device was probably disconnected
-		reconnectTimer.Touch();
-		FreeDevice();
+		if (!TrySendReport(device.device, report))
+		{
+			//device was probably disconnected
+			device.present = false;
+		}
+	}
+
+	int invalid;
+	while (FindInvalidDevice(m_devices, invalid))
+	{
+		FreeDevice(m_devices[invalid]);
+		m_devices.erase(m_devices.begin() + invalid);
 	}
 }
 

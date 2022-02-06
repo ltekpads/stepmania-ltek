@@ -4,6 +4,14 @@
 #include "arch/Lights/LightsDriver.h"
 #include "archutils/Win32/USB.h"
 
+struct DeviceInfo {
+	USBDevice* device;
+	int vid;
+	int pid;
+	int index;
+	bool present;
+};
+
 class LightsDriver_Win32LTek : public LightsDriver
 {
 public:
@@ -12,8 +20,7 @@ public:
 
 	virtual void Set( const LightsState *ls );
 private:
-	USBDevice *m_pDevice;
-	void FreeDevice();
+	vector<DeviceInfo> m_devices;
 };
 
 enum LTekCommand : char
