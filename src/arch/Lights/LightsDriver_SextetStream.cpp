@@ -63,8 +63,8 @@ inline size_t packCabinetLights(const LightsState *ls, uint8_t* buffer)
 	buffer[0] = packPrintableSextet(
 		ls->m_bCabinetLights[LIGHT_MARQUEE_UP_LEFT],
 		ls->m_bCabinetLights[LIGHT_MARQUEE_UP_RIGHT],
-		ls->m_bCabinetLights[LIGHT_MARQUEE_LR_LEFT],
-		ls->m_bCabinetLights[LIGHT_MARQUEE_LR_RIGHT],
+		ls->m_bCabinetLights[LIGHT_MARQUEE_DOWN_LEFT],
+		ls->m_bCabinetLights[LIGHT_MARQUEE_DOWN_RIGHT],
 		ls->m_bCabinetLights[LIGHT_BASS_LEFT],
 		ls->m_bCabinetLights[LIGHT_BASS_RIGHT]);
 	return CABINET_SEXTET_COUNT;

@@ -291,9 +291,9 @@ void LightsManager::Update( float fDeltaTime )
 			{
 				DEFAULT_FAIL( iTopIndex );
 				case 0:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_LEFT]  = true;	break;
-				case 1:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_LR_RIGHT] = true;	break;
+				case 1:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_DOWN_RIGHT] = true;	break;
 				case 2:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_RIGHT] = true;	break;
-				case 3:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_LR_LEFT]  = true;	break;
+				case 3:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_DOWN_LEFT]  = true;	break;
 			}
 
 			if( iTopIndex == 0 )
@@ -330,9 +330,9 @@ void LightsManager::Update( float fDeltaTime )
 			{
 				DEFAULT_FAIL( iLight );
 				case 0:	cl = LIGHT_MARQUEE_UP_LEFT;	break;
-				case 1:	cl = LIGHT_MARQUEE_LR_RIGHT;	break;
+				case 1:	cl = LIGHT_MARQUEE_DOWN_RIGHT;	break;
 				case 2:	cl = LIGHT_MARQUEE_UP_RIGHT;	break;
-				case 3:	cl = LIGHT_MARQUEE_LR_LEFT;	break;
+				case 3:	cl = LIGHT_MARQUEE_DOWN_LEFT;	break;
 			}
 
 			m_LightsState.m_bCabinetLights[cl] = true;
@@ -358,8 +358,8 @@ void LightsManager::Update( float fDeltaTime )
 			
 			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_LEFT] = blinkUp;
 			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_RIGHT] = blinkUp;
-			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_LR_LEFT] = !blinkUp;
-			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_LR_RIGHT] = !blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_DOWN_LEFT] = !blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_DOWN_RIGHT] = !blinkUp;
 			m_LightsState.m_bCabinetLights[LIGHT_BASS_RIGHT] = false;
 			m_LightsState.m_bCabinetLights[LIGHT_BASS_LEFT] = false;
 

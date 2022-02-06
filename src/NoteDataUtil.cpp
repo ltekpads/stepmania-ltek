@@ -1124,22 +1124,22 @@ void HoldToLightNoteTrackIndices(int holdTrack, vector<int>& outNoteTracks)
 	if (holdTrack == 0)
 	{
 		outNoteTracks.push_back(0);
-		outNoteTracks.push_back(1);
+		outNoteTracks.push_back(2);
 	}
 	if (holdTrack == 1)
 	{
-		outNoteTracks.push_back(1);
 		outNoteTracks.push_back(2);
+		outNoteTracks.push_back(3);
 	}
 	if (holdTrack == 2)
 	{
-		outNoteTracks.push_back(3);
 		outNoteTracks.push_back(0);
+		outNoteTracks.push_back(1);
 	}
 	if (holdTrack == 3)
 	{
+		outNoteTracks.push_back(1);
 		outNoteTracks.push_back(3);
-		outNoteTracks.push_back(2);
 	}
 }
 
