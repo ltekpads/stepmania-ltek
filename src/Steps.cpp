@@ -376,7 +376,7 @@ void Steps::Decompress()
 
 		if( this->m_StepsType == StepsType_lights_cabinet )
 		{
-			NoteDataUtil::LoadTransformedLights( notedata, *m_pNoteData, iNewTracks );
+			NoteDataUtil::LoadTransformedLights( notedata, *m_pNoteData, iNewTracks, *parent->GetTimingData() );
 		}
 		else
 		{

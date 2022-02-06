@@ -1589,7 +1589,58 @@ void CopyTrack(const NoteData& in, NoteData& out, int track)
 	}
 }
 
-void NoteDataUtil::LoadTransformedLights( const NoteData &in, NoteData &out, int iNewNumTracks )
+void BuildLimitedBlinking(const NoteData& in, NoteData& out, const TimingData& timing, float blinkInterval)
+{
+	//lights are simplified - every channel blinks in the same way:
+	NoteData channel;
+	channel.SetNumTracks(1);
+
+	FOREACH_NONEMPTY_ROW_ALL_TRACKS(in, row)
+	{
+		if(row % ROWS_PER_BEAT == 0 && HasNoteTypeAtRow(in, TapNoteType_Tap, row))
+			channel.SetTapNote(0, row, TAP_ORIGINAL_TAP);
+
+		if (!HasNoteTypeAtRow(in, TapNoteType_HoldHead, row))
+			continue;
+		const int end = FindHoldEnd(in, row);
+		const int start = row % ROWS_PER_BEAT == 0 ? row : row + ROWS_PER_BEAT - (row % ROWS_PER_BEAT);
+		for (int offset = start; offset <= end; offset += ROWS_PER_BEAT)
+			channel.SetTapNote(0, offset, TAP_ORIGINAL_TAP);
+	}
+
+
+	NoteData withInterval;
+	withInterval.SetNumTracks(1);
+	float previousElapsed = -blinkInterval * 2;
+	FOREACH_NONEMPTY_ROW_IN_TRACK(channel, 0, row)
+	{
+		const float elapsed = timing.GetElapsedTimeFromBeat(NoteRowToBeat(row));
+		const float interval = elapsed - previousElapsed;
+		if (interval >= blinkInterval * 2)
+		{
+			withInterval.SetTapNote(0, row, TAP_ORIGINAL_TAP);
+			previousElapsed = elapsed;
+		}
+	}
+
+	FOREACH_NONEMPTY_ROW_IN_TRACK(withInterval, 0, row)
+	{
+		int next = row;
+		int hasNext = withInterval.GetNextTapNoteRowForAllTracks(next);
+		const float elapsed = timing.GetElapsedTimeFromBeat(NoteRowToBeat(row));
+		const float toNext = hasNext
+			? timing.GetElapsedTimeFromBeat(NoteRowToBeat(next)) - elapsed
+			: blinkInterval*2;
+
+		const float duration = min(toNext / 2, blinkInterval);
+		const float beat = timing.GetBeatFromElapsedTime(elapsed + duration);
+		const float rowEnd = BeatToNoteRow(beat);
+		for (int a = 0; a < out.GetNumTracks(); a++)
+			out.AddHoldNote(a, row, rowEnd, TAP_ORIGINAL_HOLD_HEAD);
+	}
+}
+
+void NoteDataUtil::LoadTransformedLights( const NoteData &in, NoteData &out, int iNewNumTracks, const TimingData& timing )
 {
 	// reset all notes
 	out.Init();
@@ -1649,6 +1700,13 @@ void NoteDataUtil::LoadTransformedLights( const NoteData &in, NoteData &out, int
 		CopyTrack(autogen, out, LIGHT_BASS_LEFT);
 		CopyTrack(autogen, out, LIGHT_BASS_RIGHT);
 	}
+
+	if (!g_bLightsPhotosensitivityMode.Get())
+		return;
+
+	NoteData fullLights(out);
+	out.ClearAll();
+	BuildLimitedBlinking(fullLights, out, timing, g_fLightsPhotosensitivityModeLimiterSeconds.Get());
 }
 
 // This transform is specific to StepsType_lights_cabinet.

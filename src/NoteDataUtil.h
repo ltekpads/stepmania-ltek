@@ -44,7 +44,7 @@ namespace NoteDataUtil
 	 * @param out the new NoteData.
 	 * @param iNewNumTracks the number of tracks/columns of the new NoteData. */
 	void LoadOverlapped( const NoteData &in, NoteData &out, int iNewNumTracks );
-	void LoadTransformedLights( const NoteData &in, NoteData &out, int iNewNumTracks );
+	void LoadTransformedLights( const NoteData &in, NoteData &out, int iNewNumTracks, const TimingData& timing );
 	void LoadTransformedLightsFromTwo( const NoteData &marquee, const NoteData &bass, NoteData &out );
 	void InsertHoldTails( NoteData &inout );
 
