@@ -1363,6 +1363,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 	LightPattern* lastPattern = nullptr;
 	int lastStartIndex = 0;
 
+	//marquee lights
 	for (auto& group : splitGroups)
 	{
 		if (group.holdGroup)
@@ -1492,6 +1493,27 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		lastStartIndex = startIndex;
 		lastPattern = pattern;
 		lastGroup = &group;
+	}
+
+	//bass lights
+	for (auto& group : allGroups)
+	{
+		if (group.holdGroup)
+		{
+			out.AddHoldNote(LIGHT_BASS_LEFT, group.startOffset, group.endOffset, TAP_ORIGINAL_HOLD_HEAD);
+			out.AddHoldNote(LIGHT_BASS_RIGHT, group.startOffset, group.endOffset, TAP_ORIGINAL_HOLD_HEAD);
+			continue;
+		}
+
+		vector<int> offsets;
+		FindTapOffsetsInRange(normalized, group.startOffset, group.endOffset, offsets);
+		for (const auto& offset : offsets)
+		{
+			if (offset % ROWS_PER_BEAT != 0)
+				continue;
+			out.SetTapNote(LIGHT_BASS_LEFT, offset, TAP_ORIGINAL_TAP);
+			out.SetTapNote(LIGHT_BASS_RIGHT, offset, TAP_ORIGINAL_TAP);
+		}
 	}
 }
 
