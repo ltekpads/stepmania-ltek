@@ -841,7 +841,7 @@ int FindNoteStreamEnd(const NoteData& noteData, int start)
 		if (nextSpacing > ROWS_PER_BEAT)
 			return endNext;
 		if (nextSpacing == ROWS_PER_BEAT && streamSpacing < ROWS_PER_BEAT)
-			return end;
+			return endNext;
 		if (streamSpacing == ROWS_PER_BEAT && nextSpacing < ROWS_PER_BEAT)
 			return end;
 
