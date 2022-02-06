@@ -440,6 +440,23 @@ void LightsManager::Update( float fDeltaTime )
 			bool bGameplay = (m_LightsMode == LIGHTSMODE_DEMONSTRATION) || (m_LightsMode == LIGHTSMODE_GAMEPLAY);
 			m_LightsState.m_beat = fracf(GAMESTATE->m_Position.m_fLightSongBeat) <= 0.5f && GAMESTATE->m_Position.m_bHasTiming;
 
+			if (bGameplay)
+			{
+				FOREACH_ENUM(PlayerNumber, pn)
+				{
+					if (!GAMESTATE->m_bSideIsJoined[pn])
+					{
+						continue;
+					}
+					LifebarData& state = m_Lifebars[pn];
+					LifebarState& target = m_LightsState.m_cLifeBarLights[pn];
+					target.present = true;
+					target.lives = state.lives;
+					target.percent = state.percent;
+					target.mode = state.mode;
+				}
+			}
+
 			// Blink on notes during gameplay.
 			if( bGameplay && g_BlinkGameplayButtonLightsOnNote != GBBM_Never )
 			{
@@ -456,23 +473,6 @@ void LightsManager::Update( float fDeltaTime )
 					}
 				}
 				break;
-			}
-
-			if( bGameplay )
-			{
-				FOREACH_ENUM( PlayerNumber, pn )
-				{
-					if (!GAMESTATE->m_bSideIsJoined[pn])
-					{
-						continue;
-					}
-					LifebarData& state = m_Lifebars[pn];
-					LifebarState& target = m_LightsState.m_cLifeBarLights[pn];
-					target.present = true;
-					target.lives = state.lives;
-					target.percent = state.percent;
-					target.mode = state.mode;
-				}
 			}
 
 			// fall through to blink on button presses
