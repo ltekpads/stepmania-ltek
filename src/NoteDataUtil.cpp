@@ -1007,8 +1007,8 @@ struct LightPattern
 	vector<LightRow> rows;
 };
 
-static vector<LightPattern> PatternsA;
-static vector<LightPattern> PatternsB;
+static vector<LightPattern> ShortPatterns;
+static vector<LightPattern> LongPatterns;
 
 void AddPattern(vector<LightPattern>& target, const char* pattern)
 {
@@ -1036,7 +1036,8 @@ void AddPattern(vector<LightPattern>& target, const char* pattern)
 	}
 }
 
-void BuildTapSet(vector<LightPattern>& target)
+//light patterns for note groups of size 2-9
+void BuildShortSet(vector<LightPattern>& target)
 {
 	//comma separated row patterns/ each number represents pattern duration (1=single blink, longer = hold)
 	AddPattern(target, "11  ,  11,11  ,  11,11  ,  11,11  ,  11,11  ,  11");
@@ -1045,28 +1046,25 @@ void BuildTapSet(vector<LightPattern>& target)
 	AddPattern(target, " 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 ");
 	AddPattern(target, " 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1");
 	AddPattern(target, "1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ");
+}
 
+//light patterns for note groups of size 4-9
+void BuildLongSet(vector<LightPattern>& target)
+{
 	AddPattern(target, "11  ,1  1,  11, 11 ,11  ,1  1,  11, 11 ,11  ,1  1");
 	AddPattern(target, "  11,1  1,11  , 11 ,  11,1  1,11  , 11 ,  11,1  1");
 	AddPattern(target, "1 1 ,11  , 1 1,  11,1 1 ,11  , 1 1,  11,1 1 , 1 1");
 	AddPattern(target, " 1 1, 11 ,1 1 ,1  1, 1 1, 11 ,1 1 ,1  1, 1 1,1 1 ");
 }
 
-void BuildHoldSet(vector<LightPattern>& target)
-{
-	AddPattern(target, " 1  ,13  ,2 1 ,  11, 1  ,13  ,2 1 ,  11");
-	AddPattern(target, " 1  , 31 ,1 2 ,1  1, 1  , 31 ,1 2 ,1  1");
-	AddPattern(target, "11  ,1  1,  11, 11 ,11  ,1  1,  11, 11 ");
-}
-
 void InitAutogenPatterns()
 {
-	if (PatternsA.size() == 0)
-		BuildTapSet(PatternsA);
-	if (PatternsB.size() > 0)
-		return;
-	BuildTapSet(PatternsB);
-	//BuildHoldSet(PatternsB); //hold patterns disabled for now
+	if (ShortPatterns.size() == 0) {
+		BuildShortSet(ShortPatterns);
+		BuildLongSet(LongPatterns);
+	}
+	if (LongPatterns.size() == 0)
+		BuildLongSet(LongPatterns);
 }
 
 enum LightPatternSelection
@@ -1446,7 +1444,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		}
 
 		auto patternSelection = LPS_Random;
-		auto& patternSet = group.count % 4 == 0 ? PatternsB : PatternsA;
+		auto& patternSet = group.count <= 2 ? ShortPatterns : LongPatterns;
 
 		const LightPattern* pattern = nullptr;
 		if (lastGroup != nullptr && lastGroup->count == group.count && !lastGroup->jumpGroup)
