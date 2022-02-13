@@ -1341,6 +1341,17 @@ void LightSectionsToHoldTracks(const vector<HoldLightSection>& sections, vector<
 	}
 }
 
+int FindDifferentRow(const vector<LightRow>& rows, const LightRow& pattern)
+{
+	for (int a = 0; a < rows.size(); a++)
+	{
+		if (!LightRowsEqual(rows[a], pattern))
+			return a;
+	}
+
+	sm_crash("All light rows in light pattern were equal."); //this should not be possible
+}
+
 void GenerateLightPatterns(const NoteData& in, NoteData& out)
 {
 	InitAutogenPatterns();
@@ -1359,9 +1370,9 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 	for (auto& group : allGroups)
 		SplitNoteGroup(normalized, group, splitGroups);
 
-	NoteGroup* lastGroup = nullptr;
-	LightPattern* lastPattern = nullptr;
-	int lastStartIndex = 0;
+	const NoteGroup* lastGroup = nullptr;
+	const LightPattern* lastPattern = nullptr;
+	const LightRow* lastRow = nullptr;
 
 	//marquee lights
 	for (auto& group : splitGroups)
@@ -1413,6 +1424,8 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 			LightSectionsToHoldTracks(holdLights, holdTracks);
 			for (const auto& track : holdTracks)
 				out.AddHoldNote(track.track, track.startOffset, track.endOffset, TAP_ORIGINAL_HOLD_HEAD);
+
+			lastRow = nullptr;
 			continue;
 		}
 
@@ -1428,14 +1441,14 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 
 			lastGroup = &group;
 			lastPattern = nullptr;
-			lastStartIndex = 0;
+			lastRow = nullptr;
 			continue;
 		}
 
 		auto patternSelection = LPS_Random;
 		auto& patternSet = group.count % 4 == 0 ? PatternsB : PatternsA;
 
-		LightPattern* pattern = nullptr;
+		const LightPattern* pattern = nullptr;
 		if (lastGroup != nullptr && lastGroup->count == group.count && !lastGroup->jumpGroup)
 		{
 			int chance = random(100);
@@ -1459,10 +1472,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		const int BLINK_WITH_ALL_GROUP_SIZE = 3;
 
 		ASSERT(pattern != nullptr);
-		const int startIndex = lastPattern == nullptr || lastGroup == nullptr || !LightRowsEqual(lastPattern->rows[lastStartIndex+lastGroup->count-1], pattern->rows[0]) || lastGroup->count == BLINK_WITH_ALL_GROUP_SIZE
-			? 0
-			: 1;
-
+		const int startIndex = lastRow ? FindDifferentRow(pattern->rows, *lastRow) : 0;
 		ASSERT(offsets.size() <= pattern->rows.size()+startIndex);
 
 		const auto& channelMapping = patternSelection != LPS_Mirror ? StandardMapping : MirroredMapping;
@@ -1470,6 +1480,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		for (int offset = 0; offset < offsets.size(); offset++)
 		{
 			const auto& row = pattern->rows[offset+startIndex];
+			lastRow = &row;
 			for (int index=0; index < channelMapping.size(); index++)
 			{
 				const int tapLength = row.duration[channelMapping[index]];
@@ -1488,9 +1499,9 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		{
 			for (int a = 0; a < LIGHT_BASS_LEFT; a++)
 				out.SetTapNote(a, offsets[BLINK_WITH_ALL_GROUP_SIZE-1], TAP_ORIGINAL_TAP);
+			lastRow = nullptr;
 		}
 
-		lastStartIndex = startIndex;
 		lastPattern = pattern;
 		lastGroup = &group;
 	}
