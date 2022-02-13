@@ -301,6 +301,7 @@ void GameLoop::RunGameLoop()
 		{
 			INPUTFILTER->Reset();	// fix "buttons stuck" if button held while unplugged
 			INPUTMAN->LoadDrivers();
+			LIGHTSMAN->DevicesChanged();
 			RString sMessage;
 			if( INPUTMAPPER->CheckForChangedInputDevicesAndRemap( AUTO_MAP_CHANGED, sMessage) )
 				SCREENMAN->SystemMessage( sMessage );

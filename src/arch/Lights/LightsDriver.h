@@ -34,6 +34,7 @@ public:
 	virtual ~LightsDriver() {};
 
 	virtual void Set( const LightsState *ls ) = 0;
+	virtual void DevicesChanged() {}
 };
 
 #define REGISTER_LIGHTS_DRIVER_CLASS2( name, x, displayName ) \

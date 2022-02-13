@@ -19,6 +19,7 @@ public:
 	virtual ~LightsDriver_Win32LTek();
 
 	virtual void Set( const LightsState *ls );
+	virtual void DevicesChanged();
 private:
 	vector<DeviceInfo> m_devices;
 };

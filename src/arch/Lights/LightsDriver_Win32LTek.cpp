@@ -87,13 +87,9 @@ static bool Check_Win32LTek()
 
 REGISTER_LIGHTS_DRIVER_AVAILABILITY_CHECK(Win32LTek);
 
-static RageTimer reconnectTimer;
-
-
 LightsDriver_Win32LTek::LightsDriver_Win32LTek()
 {
 	LoadDevices(m_devices);
-	reconnectTimer.Touch();
 }
 
 LightsDriver_Win32LTek::~LightsDriver_Win32LTek()
@@ -189,16 +185,14 @@ bool FindInvalidDevice(const vector<DeviceInfo>& devices, int& index)
 	return false;
 }
 
+void LightsDriver_Win32LTek::DevicesChanged()
+{
+	FreeDevices(m_devices);
+	LoadDevices(m_devices);
+}
+
 void LightsDriver_Win32LTek::Set( const LightsState *ls )
 {
-	if (reconnectTimer.Ago() > 1)
-	{
-		LoadDevices(m_devices);
-		reconnectTimer.Touch();
-		if (m_devices.size() == 0)
-			return;
-	}
-
 	HidReport<LTekLightsReport> report;
 	ZERO( report );
 	report.reportType = ReportTypeSetLights;

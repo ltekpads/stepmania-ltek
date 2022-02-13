@@ -167,6 +167,12 @@ void LightsManager::Reload()
 	LightsDriver::Create(sDriver, m_vpDrivers);
 }
 
+void LightsManager::DevicesChanged()
+{
+	FOREACH(LightsDriver*, m_vpDrivers, iter)
+		(*iter)->DevicesChanged();
+}
+
 // XXX: Allow themer to change these. (rewritten; who wrote original? -aj)
 static const float g_fLightEffectRiseSeconds = 0.075f;
 static const float g_fLightEffectFalloffSeconds = 0.35f;

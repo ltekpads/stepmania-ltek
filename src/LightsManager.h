@@ -99,6 +99,7 @@ public:
 	void Update( float fDeltaTime );
 	bool IsEnabled() const;
 	void Reload();
+	void DevicesChanged();
 	const void ListDrivers(vector<RString>& drivers);
 	const RString FindDisplayName(const RString& driverName);
 
