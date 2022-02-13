@@ -484,6 +484,17 @@ static const AutoMappings g_AutoMappings[] =
 	   ),
 	   AutoMappings(
 		"dance",
+		"L-TEK Dance Base MINI",
+		"L-TEK usb dance pad",
+		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_UP, false),
+		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_DOWN, false),
+		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_LEFT, false),
+		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_RIGHT, false),
+		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_BACK, false),
+		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_START, false)
+	   ),
+	   AutoMappings(
+		"dance",
 		"Controller \\(Harmonix Drum Kit for Xbox 360\\)",
 		"Rock Band drum controller (Xbox 360, Windows driver)",
 		AutoMappingEntry( 0, JOY_BUTTON_3,      DANCE_BUTTON_UP,	       false ),	       // blue drum

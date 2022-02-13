@@ -4,7 +4,7 @@
 #include "RageUtil.h"
 
 struct VidPid { int vid; int pid; };
-const VidPid DeviceIds[]{ {0x03EB,0x800A}, {0x03EB,0x800B} };
+const VidPid DeviceIds[]{ {0x03EB,0x8004}, {0x03EB,0x800A}, {0x03EB,0x800B} };
 
 REGISTER_LIGHTS_DRIVER_CLASS(Win32LTek, "L-TEK");
 const int ReportTypeSetLights = 10;
