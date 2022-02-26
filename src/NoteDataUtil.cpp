@@ -1444,7 +1444,7 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		}
 
 		auto patternSelection = LPS_Random;
-		auto& patternSet = group.count <= 2 ? ShortPatterns : LongPatterns;
+		auto& patternSet = group.count <= 3 ? ShortPatterns : LongPatterns;
 
 		const LightPattern* pattern = nullptr;
 		if (lastGroup != nullptr && lastGroup->count == group.count && !lastGroup->jumpGroup)
