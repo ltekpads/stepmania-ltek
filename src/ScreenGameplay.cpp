@@ -1409,6 +1409,8 @@ void ScreenGameplay::LoadLights()
 	const Steps *pSteps = SongUtil::GetClosestNotes( GAMESTATE->m_pCurSong, StepsType_lights_cabinet, Difficulty_Medium );
 	if( pSteps != NULL )
 	{
+		NoteData copy(m_CabinetLightsNoteData);
+		NoteDataUtil::NormalizeLightTrack(copy, m_CabinetLightsNoteData, GAMEMAN->GetStepsTypeInfo(StepsType_lights_cabinet).iNumTracks, *pSteps->GetTimingData());
 		pSteps->GetNoteData( m_CabinetLightsNoteData );
 		return;
 	}

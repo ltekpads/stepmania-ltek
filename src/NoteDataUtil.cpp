@@ -1649,6 +1649,21 @@ void BuildLimitedBlinking(const NoteData& in, NoteData& out, const TimingData& t
 	}
 }
 
+void NoteDataUtil::NormalizeLightTrack(const NoteData& in, NoteData& out, int iNewNumTracks, const TimingData& timing)
+{
+	out.Init();
+	out.SetNumTracks(iNewNumTracks);
+	if (!g_bLightsPhotosensitivityMode.Get())
+	{
+		out.CopyAll(in);
+		return;
+	}
+
+	out.ClearAll();
+	BuildLimitedBlinking(in, out, timing, g_fLightsPhotosensitivityModeLimiterSeconds.Get());
+}
+
+
 void NoteDataUtil::LoadTransformedLights( const NoteData &in, NoteData &out, int iNewNumTracks, const TimingData& timing )
 {
 	// reset all notes

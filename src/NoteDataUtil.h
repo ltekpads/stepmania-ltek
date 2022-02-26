@@ -46,6 +46,7 @@ namespace NoteDataUtil
 	void LoadOverlapped( const NoteData &in, NoteData &out, int iNewNumTracks );
 	void LoadTransformedLights( const NoteData &in, NoteData &out, int iNewNumTracks, const TimingData& timing );
 	void LoadTransformedLightsFromTwo( const NoteData &marquee, const NoteData &bass, NoteData &out );
+	void NormalizeLightTrack(const NoteData& in, NoteData& out, int iNewNumTracks, const TimingData& timing);
 	void InsertHoldTails( NoteData &inout );
 
 	// Special case so that kickbox can have autogen steps that are playable.
