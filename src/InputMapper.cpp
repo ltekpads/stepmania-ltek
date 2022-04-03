@@ -737,6 +737,7 @@ void InputMapper::AutoMapJoysticksForCurrentGame( AutoMappingMode mode )
 
 			Unmap( id );
 			ApplyMapping( mapping->m_vMaps, gc, id );
+			break; //this ensures that only single mapping profile will be used for each device in case multiple mapping profiles were matched for a single device
 		}
 	}
 }
