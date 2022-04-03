@@ -729,6 +729,8 @@ int FindHash(const NoteData& in)
 	return result;
 }
 
+//- remove everything that is not a hold or tap note
+//- replace short hold notes with simple tap notes
 void NormalizeNotes(const NoteData& in, NoteData& out)
 {
 	out.SetNumTracks(in.GetNumTracks());
@@ -812,6 +814,10 @@ void FindHoldsAtRow(const NoteData& noteData, int row, vector<HoldInfo>& result)
 	}
 }
 
+//note stream ends when there are no notes closer than a beat
+//stream end uses a sliding window to find its ending position
+//we need to look at the TWO notes after current one in order to decide if the stream should end or continue
+//case: 8th notes stream followed immediately by a 4th notes stream (or in a reverse) (look at streamSpacing variable that keeps the information about distance between notes)
 int FindNoteStreamEnd(const NoteData& noteData, int start)
 {
 	const bool isJumpStream = FindTapsInRow(noteData, start) > 1;
@@ -923,7 +929,6 @@ int TakeTappedRows(const NoteData& noteData, int start, int end, int tappedRowCo
 	}
 }
 
-
 void BuildNoteGroups(const NoteData& noteData, vector<NoteGroup>& result)
 {
 	int row = -1;
@@ -943,6 +948,7 @@ void BuildNoteGroups(const NoteData& noteData, vector<NoteGroup>& result)
 	}
 }
 
+//splits note group in two in such way that first resulting group has 'splitCount' number of notes and the rest of the notes goes to the second group
 void SplitGroup(const NoteData& noteData, const NoteGroup& source, int splitCount, NoteGroup& resultFirst, NoteGroup& resultSecond)
 {
 	ASSERT(splitCount < source.count);
@@ -962,6 +968,8 @@ void SplitGroup(const NoteData& noteData, const NoteGroup& source, int splitCoun
 	resultSecond.jumpGroup = source.jumpGroup;
 }
 
+//make sure that each note group has 9 or less notes
+//groups larger that that will be split into two or more smaller groups
 void SplitNoteGroup(const NoteData& noteData, const NoteGroup& group, vector<NoteGroup>& result)
 {
 	if (group.holdGroup || group.count <= 9)
@@ -1350,6 +1358,11 @@ int FindDifferentRow(const vector<LightRow>& rows, const LightRow& pattern)
 	sm_crash("All light rows in light pattern were equal."); //this should not be possible
 }
 
+//general idea:
+//- put notes into groups (groups are split based on a distance between notes)
+//- classify each group into a category (groups with notes only, groups with holds, groups with jumps etc.)
+//- assign a predefined pattern to each group
+//- adjust patterns depending on previous group (make a mirrored pattern, use the same pattern again etc.)
 void GenerateLightPatterns(const NoteData& in, NoteData& out)
 {
 	InitAutogenPatterns();
@@ -1598,6 +1611,14 @@ void CopyTrack(const NoteData& in, NoteData& out, int track)
 	}
 }
 
+//general idea: make lights more toned down (less blinks overall, lower blink frequency)
+//all channels blink in the same way (data from one channel is copied to all other channels)
+//transformation:
+//- use only 4th notes (blink on beat only)
+//- remove notes that are closer than specified minimal blink interval
+//- find distance between two notes (in ms)
+//- replace notes with holds
+//- set hold duration to half of an blink interval
 void BuildLimitedBlinking(const NoteData& in, NoteData& out, const TimingData& timing, float blinkInterval)
 {
 	//lights are simplified - every channel blinks in the same way:
