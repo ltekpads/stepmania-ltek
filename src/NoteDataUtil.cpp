@@ -1463,9 +1463,9 @@ void GenerateLightPatterns(const NoteData& in, NoteData& out)
 		if (lastGroup != nullptr && lastGroup->count == group.count && !lastGroup->jumpGroup)
 		{
 			int chance = random(100);
-			if (chance < 25)
+			if (chance < 50)
 				patternSelection = LPS_Random;
-			else if (chance < 50)
+			else if (chance < 75)
 				patternSelection = LPS_Mirror;
 			else
 				patternSelection = LPS_Repeat;
