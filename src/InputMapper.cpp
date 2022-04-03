@@ -323,6 +323,56 @@ static const AutoMappings g_AutoMappings[] =
 	   ),
 	   AutoMappings(
 		"dance",
+		"L-TEK Dance Base MINI",
+		"L-TEK Wireless dance pad",
+		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_UP, false),
+		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_DOWN, false),
+		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_LEFT, false),
+		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_RIGHT, false),
+		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_BACK, false),
+		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_START, false),
+		AutoMappingEntry( 0, JOY_BUTTON_7,     DANCE_BUTTON_UP,	       true ),
+		AutoMappingEntry( 0, JOY_BUTTON_8,     DANCE_BUTTON_DOWN,      true ),
+		AutoMappingEntry( 0, JOY_BUTTON_9,     DANCE_BUTTON_LEFT,      true ),
+		AutoMappingEntry( 0, JOY_BUTTON_10,     DANCE_BUTTON_RIGHT,     true ),
+		AutoMappingEntry( 0, JOY_BUTTON_11,      GAME_BUTTON_BACK,       true ),
+		AutoMappingEntry( 0, JOY_BUTTON_12,     GAME_BUTTON_START,      true )
+	   ),
+	   AutoMappings(
+		"dance",
+		"Mata taneczna L-TEK",
+		"L-TEK usb dance pad",
+		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_UP, false),
+		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_DOWN, false),
+		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_LEFT, false),
+		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_RIGHT, false),
+		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_BACK, false),
+		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_START, false)
+	   ),
+	   AutoMappings(
+		"dance",
+		"L-TEK Dance Pad PRO",
+		"L-TEK usb dance pad",
+		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_UP, false),
+		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_DOWN, false),
+		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_LEFT, false),
+		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_RIGHT, false),
+		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_BACK, false),
+		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_START, false)
+	   ),
+	   AutoMappings(
+		"dance",
+		"L-TEK Dance Base MINI",
+		"L-TEK usb dance pad",
+		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_UP, false),
+		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_DOWN, false),
+		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_LEFT, false),
+		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_RIGHT, false),
+		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_BACK, false),
+		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_START, false)
+	   ),
+	   AutoMappings(
+		"dance",
 		"Dance ", //Notice extra space at end
 		"LevelSix USB Pad (DDR638)",	// "DDR638" is the model number of the pad
 		AutoMappingEntry( 0, JOY_BUTTON_1,      DANCE_BUTTON_UP,	       false ),
@@ -442,56 +492,6 @@ static const AutoMappings g_AutoMappings[] =
 		//AutoMappingEntry{ 0, JOY_BUTTON_4,    DANCE_BUTTON_DOWNRIGHT, false ),
 		AutoMappingEntry( 0, JOY_BUTTON_9,      GAME_BUTTON_BACK,       false ),
 		AutoMappingEntry( 0, JOY_BUTTON_10,     GAME_BUTTON_START,      false )
-	   ),
-	   AutoMappings(
-		"dance",
-		"L-TEK Dance Base MINI",
-		"L-TEK Wireless dance pad",
-		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_UP, false),
-		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_DOWN, false),
-		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_LEFT, false),
-		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_RIGHT, false),
-		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_BACK, false),
-		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_START, false),
-		AutoMappingEntry( 0, JOY_BUTTON_7,     DANCE_BUTTON_UP,	       true ),
-		AutoMappingEntry( 0, JOY_BUTTON_8,     DANCE_BUTTON_DOWN,      true ),
-		AutoMappingEntry( 0, JOY_BUTTON_9,     DANCE_BUTTON_LEFT,      true ),
-		AutoMappingEntry( 0, JOY_BUTTON_10,     DANCE_BUTTON_RIGHT,     true ),
-		AutoMappingEntry( 0, JOY_BUTTON_11,      GAME_BUTTON_BACK,       true ),
-		AutoMappingEntry( 0, JOY_BUTTON_12,     GAME_BUTTON_START,      true )
-	   ),
-	   AutoMappings(
-		"dance",
-		"Mata taneczna L-TEK",
-		"L-TEK usb dance pad",
-		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_UP, false),
-		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_DOWN, false),
-		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_LEFT, false),
-		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_RIGHT, false),
-		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_BACK, false),
-		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_START, false)
-	   ),
-	   AutoMappings(
-		"dance",
-		"L-TEK Dance Pad PRO",
-		"L-TEK usb dance pad",
-		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_UP, false),
-		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_DOWN, false),
-		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_LEFT, false),
-		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_RIGHT, false),
-		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_BACK, false),
-		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_START, false)
-	   ),
-	   AutoMappings(
-		"dance",
-		"L-TEK Dance Base MINI",
-		"L-TEK usb dance pad",
-		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_UP, false),
-		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_DOWN, false),
-		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_LEFT, false),
-		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_RIGHT, false),
-		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_BACK, false),
-		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_START, false)
 	   ),
 	   AutoMappings(
 		"dance",
