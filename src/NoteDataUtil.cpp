@@ -1069,10 +1069,11 @@ void InitAutogenPatterns()
 {
 	if (ShortPatterns.size() == 0) {
 		BuildShortSet(ShortPatterns);
+	}
+	if (LongPatterns.size() == 0) {
+		BuildShortSet(LongPatterns);
 		BuildLongSet(LongPatterns);
 	}
-	if (LongPatterns.size() == 0)
-		BuildLongSet(LongPatterns);
 }
 
 enum LightPatternSelection
