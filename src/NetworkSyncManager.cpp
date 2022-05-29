@@ -209,10 +209,11 @@ void NetworkSyncManager::StartUp()
 	if( GetCommandlineArgument( "netip", &ServerIP ) )
 		PostStartUp( ServerIP );
 
-	BroadcastReception = new EzSockets;
-	BroadcastReception->create( IPPROTO_UDP );
-	BroadcastReception->bind( 8765 );
-	BroadcastReception->blocking = false;
+	//brodacast listening disabled
+	//BroadcastReception = new EzSockets;
+	//BroadcastReception->create( IPPROTO_UDP );
+	//BroadcastReception->bind( 8765 );
+	//BroadcastReception->blocking = false;
 }
 
 
@@ -454,7 +455,7 @@ void NetworkSyncManager::Update(float fDeltaTime)
 		ProcessInput();
 
 	PacketFunctions BroadIn;
-	if ( BroadcastReception->ReadPack( (char*)&BroadIn.Data, 1020 ) )
+	if ( BroadcastReception && BroadcastReception->ReadPack( (char*)&BroadIn.Data, 1020 ) )
 	{
 		NetServerInfo ThisServer;
 		BroadIn.Position = 0;
