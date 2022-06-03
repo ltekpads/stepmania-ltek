@@ -494,7 +494,7 @@ struct VideoCardDefaults
 	VideoCardDefaults(
 		"GeForce|Radeon|Wonder 9|Quadro",
 		"opengl,d3d",
-		640,480,
+		1920,1080,
 		32,32,32,	// 32 bit textures are faster to load
 		2048,
 		true	// hardware accelerated
@@ -614,7 +614,7 @@ struct VideoCardDefaults
 		// This must be the very last entry!
 		"",
 		"opengl,d3d",
-		640,480,
+		1920,1080,
 		32,32,32,
 		2048,
 		false  // AA is slow on some cards, so let's selectively enable HW accelerated cards.
