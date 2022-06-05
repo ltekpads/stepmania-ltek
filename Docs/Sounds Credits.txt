@@ -1,0 +1,24 @@
+﻿== L-TEK Sp. z o.o. ==
+== maty-taneczne.pl ==
+
+CEO
+Katarzyna Krupnik
+
+CTO
+Tomasz Tadeusz Krupnik (tekatom)
+
+Solution Architect
+Piotr Maciążek (Chmurek)
+
+Firmware Developer
+Piotr Chmiel (Black Dragon)
+
+Project Manager
+Magdalena Wąsik
+
+Junior Project Manager
+Adrianna Krupnik
+Jakub Warzecha
+
+IT Specialist
+Marek Gaworczyk
