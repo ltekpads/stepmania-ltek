@@ -32,6 +32,7 @@ public:
 
 	virtual RString GetApiDescription() const { return "OpenGL"; }
 	virtual void GetDisplayResolutions( DisplayResolutions &out ) const;
+	virtual void GetPrefferedVideoMode( VideoModeParams& p ) const;
 	void ResolutionChanged();
 	const RagePixelFormatDesc *GetPixelFormatDesc(RagePixelFormat pf) const;
 

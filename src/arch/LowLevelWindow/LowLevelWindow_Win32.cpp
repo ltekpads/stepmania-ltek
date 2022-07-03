@@ -64,6 +64,15 @@ void LowLevelWindow_Win32::GetDisplayResolutions( DisplayResolutions &out ) cons
 	GraphicsWindow::GetDisplayResolutions( out );
 }
 
+void LowLevelWindow_Win32::GetPrefferedVideoMode(VideoModeParams& p) const
+{
+	p.bpp = 32;
+	p.width = GetSystemMetrics(SM_CXSCREEN);
+	p.height = GetSystemMetrics(SM_CYSCREEN);
+	p.windowed = false;
+	p.bSmoothLines = true;
+}
+
 int ChooseWindowPixelFormat( const VideoModeParams &p, PIXELFORMATDESCRIPTOR *pixfmt )
 {
 	ASSERT( GraphicsWindow::GetHwnd() != NULL );

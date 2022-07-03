@@ -286,6 +286,16 @@ void RageDisplay_D3D::GetDisplayResolutions( DisplayResolutions &out ) const
 	}
 }
 
+void RageDisplay_D3D::GetPrefferedVideoMode(VideoModeParams& p) const
+{
+	p.bpp = 32;
+	p.width = GetSystemMetrics(SM_CXSCREEN);
+	p.height = GetSystemMetrics(SM_CYSCREEN);
+	p.windowed = false;
+	p.bSmoothLines = true;
+}
+
+
 D3DFORMAT FindBackBufferType(bool bWindowed, int iBPP)
 {
 	HRESULT hr;

@@ -88,6 +88,13 @@ void RageDisplay_Null::GetDisplayResolutions( DisplayResolutions &out ) const
 	out.insert( res );
 }
 
+void RageDisplay_Null::GetPrefferedVideoMode(VideoModeParams& p) const
+{
+	p.bpp = 32;
+	p.width = 640;
+	p.height = 480;
+}
+
 RageSurface* RageDisplay_Null::CreateScreenshot()
 {
 	const RagePixelFormatDesc &desc = PIXEL_FORMAT_DESC[RagePixelFormat_RGB8];

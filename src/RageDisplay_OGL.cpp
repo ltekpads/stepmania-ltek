@@ -567,6 +567,11 @@ void RageDisplay_Legacy::GetDisplayResolutions( DisplayResolutions &out ) const
 	g_pWind->GetDisplayResolutions( out );
 }
 
+void RageDisplay_Legacy::GetPrefferedVideoMode(VideoModeParams& p ) const
+{
+	g_pWind->GetPrefferedVideoMode( p );
+}
+
 static void CheckPalettedTextures()
 {
 	RString sError;

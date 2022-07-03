@@ -182,6 +182,7 @@ public:
 
 	virtual RString GetApiDescription() const = 0;
 	virtual void GetDisplayResolutions( DisplayResolutions &out ) const = 0;
+	virtual void GetPrefferedVideoMode ( VideoModeParams &p ) const = 0;
 
 	// Don't override this.  Override TryVideoMode() instead.
 	// This will set the video mode to be as close as possible to params.

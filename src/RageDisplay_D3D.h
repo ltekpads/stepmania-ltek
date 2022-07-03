@@ -12,6 +12,7 @@ public:
 
 	virtual RString GetApiDescription() const { return "D3D"; }
 	virtual void GetDisplayResolutions( DisplayResolutions &out ) const;
+	virtual void GetPrefferedVideoMode( VideoModeParams& p ) const;
 	void ResolutionChanged();
 	const RagePixelFormatDesc *GetPixelFormatDesc(RagePixelFormat pf) const;
 

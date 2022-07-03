@@ -23,6 +23,7 @@ public:
 	// need to be reloaded.
 	virtual RString TryVideoMode( const VideoModeParams &p, bool &bNewDeviceOut ) = 0;
 	virtual void GetDisplayResolutions( DisplayResolutions &out ) const = 0;
+	virtual void GetPrefferedVideoMode ( VideoModeParams &p ) const = 0;
 
 	virtual void LogDebugInformation() const { }
 	virtual bool IsSoftwareRenderer( RString & /* sError */ ) { return false; }
