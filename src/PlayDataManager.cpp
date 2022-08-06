@@ -135,7 +135,8 @@ void PlayDataManager::SaveResult(const RString& guid, const PlayResult& result)
 	auto chartInfo = result.ToChartInfo();
 	BindText(query, 9, chartInfo);
 
-	BindText(query, 10, "play result - todo");
+	auto playResult = result.ToPlayResult();
+	BindText(query, 10, playResult);
 
 	auto stepStats = result.ToStepStats();
 	BindText(query, 11, stepStats);
@@ -339,6 +340,60 @@ RString PlayResult::ToStepStats() const
 	root["lifts"] = notes->GetNumLifts();
 	root["fakes"] = notes->GetNumFakes();
 	GAMESTATE->SetProcessedTimingData(timing);
+
+	return WriteJson(root);
+}
+
+RString PlayResult::ToPlayResult() const
+{
+	Json::Value root;
+	root["percentageScore"] = roundFloat(stats->GetPercentDancePoints());
+	root["score"] = stats->m_iActualDancePoints;
+	root["grade"] = (int)stats->GetGrade();
+
+	Json::Value tapScores;
+	tapScores["W1"] = stats->m_iTapNoteScores[TNS_W1];
+	tapScores["W2"] = stats->m_iTapNoteScores[TNS_W2];
+	tapScores["W3"] = stats->m_iTapNoteScores[TNS_W3];
+	tapScores["W4"] = stats->m_iTapNoteScores[TNS_W4];
+	tapScores["W5"] = stats->m_iTapNoteScores[TNS_W5];
+	tapScores["miss"] = stats->m_iTapNoteScores[TNS_Miss];
+	tapScores["avoidMine"] = stats->m_iTapNoteScores[TNS_AvoidMine];
+	tapScores["hitMine"] = stats->m_iTapNoteScores[TNS_HitMine];
+	tapScores["checkpointHit"] = stats->m_iTapNoteScores[TNS_CheckpointHit];
+	tapScores["checkpointMiss"] = stats->m_iTapNoteScores[TNS_CheckpointMiss];
+	root["tapNoteScores"] = tapScores;
+
+	Json::Value holdScores;
+	holdScores["held"] = stats->m_iHoldNoteScores[HNS_Held];
+	holdScores["letGo"] = stats->m_iHoldNoteScores[HNS_LetGo];
+	holdScores["missed"] = stats->m_iHoldNoteScores[HNS_Missed];
+	root["holdNoteScores"] = holdScores;
+
+	RadarValues radar;
+	const auto timing = GAMESTATE->GetProcessedTimingData();
+	GAMESTATE->SetProcessedTimingData(steps->GetTimingData());
+	NoteDataWithScoring::GetActualRadarValues(*notes, *stats, song->m_fMusicLengthSeconds, radar);
+	GAMESTATE->SetProcessedTimingData(timing);
+
+	Json::Value stepStats;
+	stepStats["tapsAndHolds"] = (int)radar[RadarCategory_TapsAndHolds];
+	stepStats["jumps"] = (int)radar[RadarCategory_Jumps];
+	stepStats["holds"] = (int)radar[RadarCategory_Holds];
+	stepStats["mines"] = (int)radar[RadarCategory_Mines];
+	stepStats["rolls"] = (int)radar[RadarCategory_Rolls];
+	stepStats["lifts"] = (int)radar[RadarCategory_Lifts];
+	stepStats["fakes"] = (int)radar[RadarCategory_Fakes];
+	root["stepStats"] = stepStats;
+
+	root["maxCombo"] = stats->GetMaxCombo().GetStageCnt();
+
+	const RString fullCombo = stats->FullCombo() ? TapNoteScoreToString(stats->GetBestFullComboTapNoteScore()) : "";
+	root["fullComboTier"] = fullCombo;
+
+	auto modifiers = playerOptions->GetCurrent().GetString();
+	root["modifiers"] = modifiers;
+	root["disqualified"] = stats->IsDisqualified();
 
 	return WriteJson(root);
 }

@@ -2650,6 +2650,7 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 		result.song = GAMESTATE->m_pCurSong;
 		result.stats = pi->GetPlayerStageStats();
 		result.notes = &pi->m_pPlayer->GetNoteData();
+		result.playerOptions = &pi->GetPlayerState()->m_PlayerOptions;
 		PLAYDATA->SaveResult(PROFILEMAN->GetProfile(pn)->m_sGuid, result);
 	}
 

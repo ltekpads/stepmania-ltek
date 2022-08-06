@@ -32,11 +32,13 @@ struct PlayResult
 	const Song* song;
 	const PlayerStageStats* stats;
 	const NoteData* notes;
+	const ModsGroup<PlayerOptions>* playerOptions;
 
 	RString ToSongInfo() const;
 	RString ToChartInfo() const;
 	RString ToDifficultyInfo() const;
 	RString ToStepStats() const;
+	RString ToPlayResult() const;
 };
 
 class PlayDataManager
