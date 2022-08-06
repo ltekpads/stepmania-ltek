@@ -116,6 +116,9 @@ public:
 
 	static float GetMaxStepDistanceSeconds();
 	static float GetWindowSeconds( TimingWindow tw );
+	static float GetWindowScale ( );
+	static float GetWindowAdd ( );
+	static float GetWindowJump ( );
 	const NoteData &GetNoteData() const { return m_NoteData; }
 	bool HasVisibleParts() const { return m_pNoteField != NULL; }
 

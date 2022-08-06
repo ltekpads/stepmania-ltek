@@ -7,6 +7,8 @@ extern "C" {
 #include "PlayerStageStats.h"
 #include "PlayerState.h"
 #include "DateTime.h"
+#include "Song.h"
+#include "NoteData.h"
 
 enum PlayDataClearResult
 {
@@ -29,6 +31,12 @@ struct PlayResult
 	const Steps* steps;
 	const Song* song;
 	const PlayerStageStats* stats;
+	const NoteData* notes;
+
+	RString ToSongInfo() const;
+	RString ToChartInfo() const;
+	RString ToDifficultyInfo() const;
+	RString ToStepStats() const;
 };
 
 class PlayDataManager

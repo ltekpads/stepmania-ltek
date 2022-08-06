@@ -283,7 +283,7 @@ void NoteDataWithScoring::GetActualRadarValues(const NoteData &in,
 
 	NoteData::all_tracks_const_iterator curr_note=
 		in.GetTapNoteRangeAllTracks(0, MAX_NOTE_ROW);
-	TimingData* timing= GAMESTATE->GetProcessedTimingData();
+	const TimingData* timing= GAMESTATE->GetProcessedTimingData();
 	// first_hittable_row and last_hittable_row exist so that
 	// GetActualVoltageRadarValue can be passed the correct song length.
 	// GetActualVoltageRadarValue scores based on the max combo, a full combo

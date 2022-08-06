@@ -231,6 +231,21 @@ float Player::GetWindowSeconds( TimingWindow tw )
 	return fSecs;
 }
 
+float Player::GetWindowScale()
+{
+	return m_fTimingWindowScale;
+}
+
+float Player::GetWindowAdd()
+{
+	return m_fTimingWindowAdd;
+}
+
+float Player::GetWindowJump()
+{
+	return m_fTimingWindowJump;
+}
+
 Player::Player( NoteData &nd, bool bVisibleParts ) : m_NoteData(nd)
 {
 	m_drawing_notefield_board= false;

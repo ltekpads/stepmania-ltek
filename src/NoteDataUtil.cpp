@@ -1016,7 +1016,7 @@ void NoteDataUtil::CalculateRadarValues( const NoteData &in, float fSongSeconds,
 	vector<recent_note> recent_notes;
 	NoteData::all_tracks_const_iterator curr_note=
 		in.GetTapNoteRangeAllTracks(0, MAX_NOTE_ROW);
-	TimingData* timing= GAMESTATE->GetProcessedTimingData();
+	const TimingData* timing= GAMESTATE->GetProcessedTimingData();
 	// total_taps exists because the stream calculation needs GetNumTapNotes,
 	// but TapsAndHolds + Jumps + Hands would be inaccurate. -Kyz
 	float total_taps= 0;

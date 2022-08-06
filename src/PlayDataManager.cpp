@@ -1,7 +1,14 @@
 #include "global.h"
 #include "PlayDataManager.h"
 #include "RageFileManager.h"
+#include "NoteDataUtil.h"
 #include "RageFile.h"
+#include "Player.h"
+#include "json/value.h"
+#include "json/writer.h"
+#include "LifeMeterBar.h"
+#include "GameState.h"
+
 //you need to manuallly create a sqlite3 visual studio project and add a dependency to a static sqlite3 library in order to compile this code under visual studio
 //pull requests adding sqlite3 to makefile definition are welcomed :)
 
@@ -41,7 +48,7 @@ const char* CreateDb =
 "	StartDate	TEXT NOT NULL,"
 "	EndDate	TEXT NOT NULL,"
 "	ClearResult	TEXT NOT NULL,"
-"	ChartHash	TEXT NOT NULL,"
+"	ChartHash	INTEGER NOT NULL,"
 "	SongInfo	TEXT NOT NULL,"
 "	ChartInfo	TEXT NOT NULL,"
 "	PlayResult	TEXT NOT NULL,"
@@ -104,26 +111,42 @@ void PlayDataManager::SaveResult(const RString& guid, const PlayResult& result)
 	StatementFinalizer f(query);
 
 	auto profileId = GetOrCreateProfile(guid);
-	auto startDate = result.startDate.GetString();
-	auto endDate = result.endDate.GetString();
+
+	RString notesCompressed;
+	NoteDataUtil::GetSMNoteDataString(*result.notes, notesCompressed);
 
 	BindInt(query, 0, profileId);
 	BindInt(query, 1, result.playerNumber);
 	BindText(query, 2, result.gameType);
 	BindText(query, 3, result.gameStyle);
+
+	auto startDate = result.startDate.GetString();
 	BindText(query, 4, startDate);
+
+	auto endDate = result.endDate.GetString();
 	BindText(query, 5, endDate);
+
 	BindText(query, 6, ClearResultToText(result.result));
-	BindText(query, 7, "hash - todo");
-	BindText(query, 8, "song info - todo");
-	BindText(query, 9, "chart info - todo");
+	BindInt(query, 7, GetHashForString(notesCompressed));
+
+	auto songInfo = result.ToSongInfo();
+	BindText(query, 8, songInfo);
+
+	auto chartInfo = result.ToChartInfo();
+	BindText(query, 9, chartInfo);
+
 	BindText(query, 10, "play result - todo");
-	BindText(query, 11, "step stats - todo");
-	BindText(query, 12, "difficulty info - todo");
+
+	auto stepStats = result.ToStepStats();
+	BindText(query, 11, stepStats);
+
+	auto difficulty = result.ToDifficultyInfo();
+	BindText(query, 12, difficulty);
 
 	const auto sqliteResult = sqlite3_step(query);
 	ASSERT(sqliteResult == SQLITE_DONE);
 }
+
 
 const RString PlayDataManager::ResolveDbPath(const RString& path)
 {
@@ -212,6 +235,113 @@ PlayDataManager::~PlayDataManager()
 	_db = nullptr;
 }
 
+RString WriteJson(Json::Value& root)
+{
+	Json::FastWriter writer;
+	return writer.write(root);
+}
+
+RString PlayResult::ToSongInfo() const
+{
+	Json::Value root;
+
+	root["title"] = song->m_sMainTitle;
+	root["subtitle"] = song->m_sSubTitle;
+	root["artist"] = song->m_sArtist;
+	root["titleTranslit"] = song->GetTranslitMainTitle();
+	root["subtitleTranslit"] = song->GetTranslitSubTitle();
+	root["artistTranslit"] = song->GetTranslitArtist();
+	root["credit"] = song->m_sCredit;
+	root["genre"] = song->m_sGenre;
+	root["origin"] = song->m_sOrigin;
+
+	return WriteJson(root);
+}
+
+RString PlayResult::ToChartInfo() const
+{
+	Json::Value root;
+	root["stepsType"] = steps->m_StepsTypeStr;
+	root["difficulty"] = DifficultyToString(steps->GetDifficulty());
+	root["meter"] = steps->GetMeter();
+	root["description"] = steps->GetDescription();
+	root["credit"] = steps->GetCredit();
+	root["chartName"] = steps->GetChartName();
+	root["chartStyle"] = steps->GetChartStyle();
+
+	return WriteJson(root);
+}
+
+float roundFloat(float value)
+{
+	return roundf(value * 10000)/10000;
+}
+
+RString PlayResult::ToDifficultyInfo() const
+{
+	Json::Value root;
+
+	Json::Value timing;
+
+	timing["timingWindowAdd"] = roundFloat(Player::GetWindowAdd());
+	timing["timingWindowJump"] = roundFloat(Player::GetWindowJump());
+	timing["timingWindowScale"] = roundFloat(Player::GetWindowScale());
+	timing["timingWindowSecondsAttack"] = roundFloat(Player::GetWindowSeconds(TW_Attack));
+	timing["timingWindowSecondsCheckpoint"] = roundFloat(Player::GetWindowSeconds(TW_Checkpoint));
+	timing["timingWindowSecondsHold"] = roundFloat(Player::GetWindowSeconds(TW_Hold));
+	timing["timingWindowSecondsMine"] = roundFloat(Player::GetWindowSeconds(TW_Mine));
+	timing["timingWindowSecondsRoll"] = roundFloat(Player::GetWindowSeconds(TW_Roll));
+	timing["timingWindowSecondsW1"] = roundFloat(Player::GetWindowSeconds(TW_W1));
+	timing["timingWindowSecondsW2"] = roundFloat(Player::GetWindowSeconds(TW_W2));
+	timing["timingWindowSecondsW3"] = roundFloat(Player::GetWindowSeconds(TW_W3));
+	timing["timingWindowSecondsW4"] = roundFloat(Player::GetWindowSeconds(TW_W4));
+	timing["timingWindowSecondsW5"] = roundFloat(Player::GetWindowSeconds(TW_W5));
+	root["timing"] = timing;
+
+	Json::Value life;
+	LifeMeterBar bar;
+
+	life["harshHotLifePenalty"] = (bool)PREFSMAN->m_HarshHotLifePenalty;
+	life["lifeDifficultyScale"] = (float)PREFSMAN->m_fLifeDifficultyScale;
+	life["progressiveLifebar"] = (int)PREFSMAN->m_iProgressiveLifebar;
+	life["progressiveStageLifebar"] = (int)PREFSMAN->m_iProgressiveStageLifebar;
+	life["initialValue"] = roundFloat(bar.GetLifeInitialValue());
+	life["minStayAlive"] = TapNoteScoreToString(bar.GetMinStayAlive());
+	life["forceLifeDifficultyOnExtraStage"] = bar.GetForceLifeDifficultyOnExtraStage();
+	life["extraStageLifeDifficulty"] = roundFloat(bar.GetExtraStageLifeDifficulty());
+	life["lifePercentChangeW1"] = roundFloat(bar.GetLifePercentChange(SE_W1));
+	life["lifePercentChangeW2"] = roundFloat(bar.GetLifePercentChange(SE_W2));
+	life["lifePercentChangeW3"] = roundFloat(bar.GetLifePercentChange(SE_W3));
+	life["lifePercentChangeW4"] = roundFloat(bar.GetLifePercentChange(SE_W4));
+	life["lifePercentChangeW5"] = roundFloat(bar.GetLifePercentChange(SE_W5));
+	life["lifePercentChangeMiss"] = roundFloat(bar.GetLifePercentChange(SE_Miss));
+	life["lifePercentChangeHitMine"] = roundFloat(bar.GetLifePercentChange(SE_HitMine));
+	life["lifePercentChangeHeld"] = roundFloat(bar.GetLifePercentChange(SE_Held));
+	life["lifePercentChangeLetGo"] = roundFloat(bar.GetLifePercentChange(SE_LetGo));
+	life["lifePercentChangeMissedHold"] = roundFloat(bar.GetLifePercentChange(SE_Missed));
+	life["lifePercentChangeCheckpointMiss"] = roundFloat(bar.GetLifePercentChange(SE_CheckpointMiss));
+	life["lifePercentChangeCheckpointHit"] = roundFloat(bar.GetLifePercentChange(SE_CheckpointHit));
+	root["life"] = life;
+
+	return WriteJson(root);
+}
+
+RString PlayResult::ToStepStats() const
+{
+	Json::Value root;
+	const auto timing = GAMESTATE->GetProcessedTimingData();
+	GAMESTATE->SetProcessedTimingData(steps->GetTimingData());
+	root["taps"] = notes->GetNumTapNotes();
+	root["jumps"] = notes->GetNumJumps();
+	root["holds"] = notes->GetNumHoldNotes();
+	root["mines"] = notes->GetNumMines();
+	root["rolls"] = notes->GetNumRolls();
+	root["lifts"] = notes->GetNumLifts();
+	root["fakes"] = notes->GetNumFakes();
+	GAMESTATE->SetProcessedTimingData(timing);
+
+	return WriteJson(root);
+}
 
 /*
  * (c) 2022 L-Tek

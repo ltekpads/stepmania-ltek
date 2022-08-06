@@ -61,7 +61,7 @@
 #include "Song.h"
 #include "XmlFileUtil.h"
 #include "Profile.h" // for replay data stuff
-#include "PlayDataManager.h";
+#include "PlayDataManager.h"
 
 // Defines
 #define SHOW_LIFE_METER_FOR_DISABLED_PLAYERS	THEME->GetMetricB(m_sName,"ShowLifeMeterForDisabledPlayers")
@@ -2649,6 +2649,7 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 		result.steps = GAMESTATE->m_pCurSteps[pn];
 		result.song = GAMESTATE->m_pCurSong;
 		result.stats = pi->GetPlayerStageStats();
+		result.notes = &pi->m_pPlayer->GetNoteData();
 		PLAYDATA->SaveResult(PROFILEMAN->GetProfile(pn)->m_sGuid, result);
 	}
 
