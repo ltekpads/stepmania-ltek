@@ -83,7 +83,46 @@ PlayDataManager::PlayDataManager()
 	if (shouldInit)
 		sqlite3_exec(_db, CreateDb, nullptr, nullptr, nullptr);
 
-	sqlite3_exec(_db, "udpate Profiles set IsAvailable=0;", nullptr, nullptr, nullptr);
+	sqlite3_exec(_db, "udpate Profiles set IsAvailable=0 where IsAvailable=1;", nullptr, nullptr, nullptr);
+}
+
+const char* ClearResultToText(PlayDataClearResult result)
+{
+	switch (result)
+	{
+		case ClearResult_Cleared: return "cleared";
+		case ClearResult_Exited: return "exited";
+		case ClearResult_FailedEndOfSong: return "failedEndOfSong";
+		case ClearResult_FailedImmediate: return "failedImmediate";
+		default: ASSERT(false);
+	}
+}
+
+void PlayDataManager::SaveResult(const RString& guid, const PlayResult& result)
+{
+	const auto query = Prepare("insert into SongsPlayed(ProfileId, PlayerNumber, GameType, GameStyle, StartDate, EndDate, ClearResult, ChartHash, SongInfo, ChartInfo, PlayResult, StepStats, DifficultyInfo) values(?,?,?,?,?,?,?,?,?,?,?,?,?);");
+	StatementFinalizer f(query);
+
+	auto profileId = GetOrCreateProfile(guid);
+	auto startDate = result.startDate.GetString();
+	auto endDate = result.endDate.GetString();
+
+	BindInt(query, 0, profileId);
+	BindInt(query, 1, result.playerNumber);
+	BindText(query, 2, result.gameType);
+	BindText(query, 3, result.gameStyle);
+	BindText(query, 4, startDate);
+	BindText(query, 5, endDate);
+	BindText(query, 6, ClearResultToText(result.result));
+	BindText(query, 7, "hash - todo");
+	BindText(query, 8, "song info - todo");
+	BindText(query, 9, "chart info - todo");
+	BindText(query, 10, "play result - todo");
+	BindText(query, 11, "step stats - todo");
+	BindText(query, 12, "difficulty info - todo");
+
+	const auto sqliteResult = sqlite3_step(query);
+	ASSERT(sqliteResult == SQLITE_DONE);
 }
 
 const RString PlayDataManager::ResolveDbPath(const RString& path)

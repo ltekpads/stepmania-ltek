@@ -3,6 +3,33 @@
 extern "C" {
 #include "../extern/sqlite3/sqlite3.h"
 }
+#include "GameConstantsAndTypes.h"
+#include "PlayerStageStats.h"
+#include "PlayerState.h"
+#include "DateTime.h"
+
+enum PlayDataClearResult
+{
+	ClearResult_Cleared,
+	ClearResult_FailedEndOfSong,
+	ClearResult_FailedImmediate,
+	ClearResult_Exited,
+	NUM_PlayDataClearResult,
+	PlayDataClearResult_Invalid,
+};
+
+struct PlayResult
+{
+	PlayerNumber playerNumber;
+	const char* gameStyle;
+	const char* gameType;
+	DateTime startDate;
+	DateTime endDate;
+	PlayDataClearResult result;
+	const Steps* steps;
+	const Song* song;
+	const PlayerStageStats* stats;
+};
 
 class PlayDataManager
 {
@@ -12,6 +39,8 @@ public:
 
 	void ActivateProfile(const RString& guid, const RString& displayName, const RString& highScoreName);
 	void DeactivateProfile(const RString& guid);
+
+	void SaveResult(const RString& guid, const PlayResult& result);
 
 private:
 	sqlite3* _db;
