@@ -697,22 +697,865 @@ int FindLongestOverlappingHoldNoteForAnyTrack( const NoteData &in, int iRow )
 	return iMaxTailRow;
 }
 
-// For every row in "in" with a tap or hold on any track, enable the specified tracks in "out".
-void LightTransformHelper( const NoteData &in, NoteData &out, const vector<int> &aiTracks )
+void ReduceTracks(NoteData& noteData, int trackCount)
 {
-	for( unsigned i = 0; i < aiTracks.size(); ++i )
-		ASSERT_M( aiTracks[i] < out.GetNumTracks(), ssprintf("%i, %i", aiTracks[i], out.GetNumTracks()) );
+	for (int surplusTrack = trackCount; surplusTrack < noteData.GetNumTracks(); surplusTrack++)
+	{
+		const int target = surplusTrack % trackCount;
 
-	FOREACH_NONEMPTY_ROW_ALL_TRACKS( in, r )
+		FOREACH_NONEMPTY_ROW_IN_TRACK(noteData, surplusTrack, row)
+		{
+			const TapNote& tn = noteData.GetTapNote(surplusTrack, row);
+			if (tn.type == TapNoteType_Tap)
+				noteData.SetTapNote(surplusTrack, row, TAP_ORIGINAL_TAP);
+			if (tn.type == TapNoteType_HoldHead)
+				noteData.AddHoldNote(surplusTrack, row, row + tn.iDuration, tn.subType == TapNoteSubType_Hold ? TAP_ORIGINAL_HOLD_HEAD : TAP_ORIGINAL_ROLL_HEAD);
+		}
+	}
+	noteData.SetNumTracks(trackCount);
+}
+
+int FindHash(const NoteData& in)
+{
+	int result=0;
+	RandomGen seedGen(573);
+	FOREACH_NONEMPTY_ROW_ALL_TRACKS(in, row)
+	{
+		int nonEmpty;
+		in.GetTapFirstNonEmptyTrack(row, nonEmpty);
+		result = result ^ (seedGen((nonEmpty+1) * 1000));
+	}
+
+	return result;
+}
+
+//- remove everything that is not a hold or tap note
+//- replace short hold notes with simple tap notes
+void NormalizeNotes(const NoteData& in, NoteData& out)
+{
+	out.SetNumTracks(in.GetNumTracks());
+	for (int track = 0; track < in.GetNumTracks();track++)
+	{
+		FOREACH_NONEMPTY_ROW_IN_TRACK(in, track, row)
+		{
+			const TapNote& tn = in.GetTapNote(track, row);
+			if (tn.type == TapNoteType_Tap)
+				out.SetTapNote(track, row, TAP_ORIGINAL_TAP);
+			if (tn.type != TapNoteType_HoldHead)
+				continue;
+			//hold notes should be shorter than original notes so that the light can blink on two adjacent hold sequence
+			const int note16th = ROWS_PER_BEAT / 4;
+			const int duration = tn.iDuration - note16th;
+			if(duration > 0)
+				out.AddHoldNote(track, row, row + duration, tn.subType == TapNoteSubType_Hold ? TAP_ORIGINAL_HOLD_HEAD : TAP_ORIGINAL_ROLL_HEAD);
+			else
+				out.SetTapNote(track, row, TAP_ORIGINAL_TAP);
+		}
+	}
+
+}
+
+struct NoteGroup
+{
+	bool holdGroup;
+	int startOffset;
+	int endOffset;
+	int count;
+	bool jumpGroup;
+};
+
+bool HasNoteTypeAtRow(const NoteData& noteData, TapNoteType type, int row)
+{
+	for (int track = 0; track < noteData.GetNumTracks(); track++)
+	{
+		const TapNote& tn = noteData.GetTapNote(track, row);
+		if (tn.type == type)
+			return true;
+	}
+	return false;
+}
+
+int FindTapsInRow(const NoteData& noteData, int row)
+{
+	int count = 0;
+	for (int track = 0; track < noteData.GetNumTracks(); track++)
+	{
+		const TapNote& tn = noteData.GetTapNote(track, row);
+		if (tn.type == TapNoteType_Tap)
+			count++;
+	}
+	return count;
+}
+
+struct HoldInfo
+{
+	int track;
+	int startOffset;
+	int duration;
+	int endOffset;
+	bool roll;
+};
+
+void FindHoldsAtRow(const NoteData& noteData, int row, vector<HoldInfo>& result)
+{
+	for (int track = 0; track < noteData.GetNumTracks(); track++)
+	{
+		const TapNote& tn = noteData.GetTapNote(track, row);
+		if (tn.type != TapNoteType_HoldHead)
+			continue;
+
+		HoldInfo info;
+		info.duration = tn.iDuration;
+		info.startOffset = row;
+		info.endOffset = row + tn.iDuration;
+		info.roll = tn.subType == TapNoteSubType_Roll;
+		info.track = track;
+		result.push_back(info);
+	}
+}
+
+//note stream ends when there are no notes closer than a beat
+//stream end uses a sliding window to find its ending position
+//we need to look at the TWO notes after current one in order to decide if the stream should end or continue
+//case: 8th notes stream followed immediately by a 4th notes stream (or in a reverse) (look at streamSpacing variable that keeps the information about distance between notes)
+int FindNoteStreamEnd(const NoteData& noteData, int start)
+{
+	const bool isJumpStream = FindTapsInRow(noteData, start) > 1;
+	int next = start;
+	if (!noteData.GetNextTapNoteRowForAllTracks(next))
+		return start;
+	if (HasNoteTypeAtRow(noteData, TapNoteType_HoldHead, next))
+		return start;
+	if (isJumpStream != (FindTapsInRow(noteData, next) > 1))
+		return start;
+	const int streamSpacing = next - start;
+	if (streamSpacing > ROWS_PER_BEAT)
+		return start;
+
+	int end = start;
+	int endNext = next;
+	while (true)
+	{
+		int endNextNext = endNext;
+		if (!noteData.GetNextTapNoteRowForAllTracks(endNextNext))
+			return endNext;
+		if (HasNoteTypeAtRow(noteData, TapNoteType_HoldHead, endNextNext))
+			return endNext;
+		if (isJumpStream != (FindTapsInRow(noteData, endNextNext) > 1))
+			return endNext;
+		const int nextSpacing = endNextNext - endNext;
+		if (nextSpacing > ROWS_PER_BEAT)
+			return endNext;
+		if (nextSpacing == ROWS_PER_BEAT && streamSpacing < ROWS_PER_BEAT)
+			return endNext;
+		if (streamSpacing == ROWS_PER_BEAT && nextSpacing < ROWS_PER_BEAT)
+			return end;
+
+		end = endNext;
+		endNext = endNextNext;
+	}
+}
+
+int FindHoldEndAtRow(const NoteData& noteData, int row)
+{
+	int duration = 0;
+	for (int track = 0; track < noteData.GetNumTracks(); track++)
+	{
+		const TapNote& tn = noteData.GetTapNote(track, row);
+		if (tn.type == TapNoteType_HoldHead)
+			duration = duration < tn.iDuration ? tn.iDuration : duration;
+	}
+	return row+duration;
+}
+
+bool FindNextRowWithType(const NoteData& noteData, int rangeStart, int rangeEnd, TapNoteType type, int& result)
+{
+	int nextCandidate = rangeStart;
+	while (true)
+	{
+		if (!noteData.GetNextTapNoteRowForAllTracks(nextCandidate))
+			return false;
+		if (nextCandidate > rangeEnd)
+			return false;
+		if (HasNoteTypeAtRow(noteData, type, nextCandidate))
+		{
+			result = nextCandidate;
+			return true;
+		}
+	}
+}
+
+int FindHoldEnd(const NoteData& noteData, int start)
+{
+	int holdStart = start;
+	int holdEnd = start;
+	while (true)
+	{
+		holdEnd = max(holdEnd, FindHoldEndAtRow(noteData, holdStart));
+		int nextStart = 0;
+		if (!FindNextRowWithType(noteData, holdStart, holdEnd, TapNoteType_HoldHead, nextStart))
+			return holdEnd;
+		holdStart = nextStart;
+	}
+}
+
+int RowTapCountInRange(const NoteData& noteData, int start, int end)
+{
+	int pos = start;
+	int count = HasNoteTypeAtRow(noteData, TapNoteType_Tap, start) ? 1 : 0;
+	while (true)
+	{
+		if (!noteData.GetNextTapNoteRowForAllTracks(pos) || pos > end)
+			return count;
+		if (HasNoteTypeAtRow(noteData, TapNoteType_Tap, pos))
+			count++;
+	}
+}
+
+int TakeTappedRows(const NoteData& noteData, int start, int end, int tappedRowCount)
+{
+	int pos = start;
+	int count = HasNoteTypeAtRow(noteData, TapNoteType_Tap, start) ? 1 : 0;
+	while (true)
+	{
+		int nextPos = pos;
+		if (!noteData.GetNextTapNoteRowForAllTracks(nextPos) || nextPos > end)
+			return pos;
+		if (HasNoteTypeAtRow(noteData, TapNoteType_Tap, nextPos))
+			count++;
+		if (count >= tappedRowCount)
+			return nextPos;
+		pos = nextPos;
+	}
+}
+
+void BuildNoteGroups(const NoteData& noteData, vector<NoteGroup>& result)
+{
+	int row = -1;
+	while (true)
+	{
+		if (!noteData.GetNextTapNoteRowForAllTracks(row))
+			return;
+
+		NoteGroup group;
+		group.startOffset = row;
+		group.holdGroup = HasNoteTypeAtRow(noteData, TapNoteType_HoldHead, row);
+		group.endOffset = group.holdGroup ? FindHoldEnd(noteData, row) : FindNoteStreamEnd(noteData, row);
+		group.count = RowTapCountInRange(noteData, group.startOffset, group.endOffset);
+		group.jumpGroup = !group.holdGroup && (FindTapsInRow(noteData, row) > 1);
+		result.push_back(group);
+		row = group.endOffset;
+	}
+}
+
+//splits note group in two in such way that first resulting group has 'splitCount' number of notes and the rest of the notes goes to the second group
+void SplitGroup(const NoteData& noteData, const NoteGroup& source, int splitCount, NoteGroup& resultFirst, NoteGroup& resultSecond)
+{
+	ASSERT(splitCount < source.count);
+	ASSERT(!source.holdGroup);
+	const int splitEnd = TakeTappedRows(noteData, source.startOffset, source.endOffset, splitCount);
+	resultFirst.holdGroup = false;
+	resultFirst.startOffset = source.startOffset;
+	resultFirst.endOffset = splitEnd;
+	resultFirst.count = splitCount;
+	resultFirst.jumpGroup = source.jumpGroup;
+
+	resultSecond.holdGroup = false;
+	resultSecond.startOffset = splitEnd;
+	noteData.GetNextTapNoteRowForAllTracks(resultSecond.startOffset);
+	resultSecond.endOffset = source.endOffset;
+	resultSecond.count = source.count - splitCount;
+	resultSecond.jumpGroup = source.jumpGroup;
+}
+
+//make sure that each note group has 9 or less notes
+//groups larger that that will be split into two or more smaller groups
+void SplitNoteGroup(const NoteData& noteData, const NoteGroup& group, vector<NoteGroup>& result)
+{
+	if (group.holdGroup || group.count <= 9)
+	{
+		result.push_back(group);
+		return;
+	}
+
+	NoteGroup current(group);
+	while (true)
+	{
+		NoteGroup a;
+		NoteGroup b;
+		if (current.count >= 18)
+		{
+			SplitGroup(noteData, current, 8, a, b);
+			result.push_back(a);
+			current = b;
+			continue;
+		}
+
+		ASSERT(current.count >= 10 && current.count < 18);
+
+		const int secondGroupSize = current.count == 10
+			? 8
+			: current.count >= 12 ? 9 : 7;
+
+		SplitGroup(noteData, current, current.count - secondGroupSize, a, b);
+		result.push_back(a);
+		result.push_back(b);
+		return;
+	}
+}
+
+struct LightRow
+{
+	//duration of 1 = tap, everything longer = hold
+	int duration[4];
+};
+
+struct LightPattern
+{
+	vector<LightRow> rows;
+};
+
+static vector<LightPattern> ShortPatterns;
+static vector<LightPattern> LongPatterns;
+
+void AddPattern(vector<LightPattern>& target, const char* pattern)
+{
+	const int length = strlen(pattern);
+	LightPattern item;
+	int pos = 0;
+	auto& rows = item.rows;
+
+	while (true)
+	{
+		LightRow row;
+		for (int channel = 0; channel < 4; channel++)
+		{
+			const char value = pattern[pos + channel];
+			row.duration[channel] = value != ' ' ? value - '0' : 0;
+		}
+		rows.push_back(row);
+		pos += 5;
+		if (pos >= length)
+		{
+			target.push_back(item);
+			return;
+		}
+		ASSERT(pattern[pos - 1] == ',');
+	}
+}
+
+//light patterns for note groups of size 2-9
+void BuildShortSet(vector<LightPattern>& target)
+{
+	//comma separated row patterns/ each number represents pattern duration (1=single blink, longer = hold)
+	AddPattern(target, "11  ,  11,11  ,  11,11  ,  11,11  ,  11,11  ,  11");
+	AddPattern(target, "  11,11  ,  11,11  ,  11,11  ,  11,11  ,  11,11  ");
+	AddPattern(target, "1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1");
+	AddPattern(target, " 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 , 1 1,1 1 ");
+	AddPattern(target, " 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1");
+	AddPattern(target, "1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ,1  1, 11 ");
+}
+
+//light patterns for note groups of size 4-9
+void BuildLongSet(vector<LightPattern>& target)
+{
+	AddPattern(target, "11  ,1  1,  11, 11 ,11  ,1  1,  11, 11 ,11  ,1  1");
+	AddPattern(target, "  11,1  1,11  , 11 ,  11,1  1,11  , 11 ,  11,1  1");
+	AddPattern(target, "1 1 ,11  , 1 1,  11,1 1 ,11  , 1 1,  11,1 1 , 1 1");
+	AddPattern(target, " 1 1, 11 ,1 1 ,1  1, 1 1, 11 ,1 1 ,1  1, 1 1,1 1 ");
+}
+
+void InitAutogenPatterns()
+{
+	if (ShortPatterns.size() == 0) {
+		BuildShortSet(ShortPatterns);
+	}
+	if (LongPatterns.size() == 0) {
+		BuildShortSet(LongPatterns);
+		BuildLongSet(LongPatterns);
+	}
+}
+
+enum LightPatternSelection
+{
+	LPS_Random,
+	LPS_Repeat,
+	LPS_Mirror
+};
+
+vector<int> StandardMapping = { 0,1,2,3 };
+vector<int> MirroredMapping = { 3,2,1,0 };
+
+void FindGroupOffsets(const NoteData& noteData, const NoteGroup& group, vector<int>& result)
+{
+	ASSERT(group.count > 0);
+	result.clear();
+	result.push_back(group.startOffset);
+	int offset = group.startOffset;
+	for (int a = 1; a < group.count; a++)
+	{
+		const bool hasOffset = noteData.GetNextTapNoteRowForAllTracks(offset);
+		ASSERT(hasOffset);
+		result.push_back(offset);
+	}
+}
+
+void FindTapOffsetsInRange(const NoteData& noteData, int startOffset, int endOffset, vector<int>& result)
+{
+	result.clear();
+	if(HasNoteTypeAtRow(noteData, TapNoteType_Tap, startOffset))
+		result.push_back(startOffset);
+	int offset = startOffset;
+	while (true)
+	{
+		if (!noteData.GetNextTapNoteRowForAllTracks(offset))
+			return;
+		if (offset > endOffset)
+			return;
+		result.push_back(offset);
+	}
+}
+
+bool LightRowsEqual(const LightRow& first, const LightRow& second)
+{
+	const int size = ARRAYLEN(first.duration);
+	for (int a = 0; a < size; a++)
+		if (first.duration[a] != second.duration[a])
+			return false;
+	return true;
+}
+
+void HoldToLightNoteTrackIndices(int holdTrack, vector<int>& outNoteTracks)
+{
+	ASSERT(holdTrack >= 0 && holdTrack < 4);
+	if (holdTrack == 0)
+	{
+		outNoteTracks.push_back(0);
+		outNoteTracks.push_back(2);
+	}
+	if (holdTrack == 1)
+	{
+		outNoteTracks.push_back(2);
+		outNoteTracks.push_back(3);
+	}
+	if (holdTrack == 2)
+	{
+		outNoteTracks.push_back(0);
+		outNoteTracks.push_back(1);
+	}
+	if (holdTrack == 3)
+	{
+		outNoteTracks.push_back(1);
+		outNoteTracks.push_back(3);
+	}
+}
+
+struct HoldTrackInfo
+{
+	int track;
+	bool roll;
+};
+
+struct HoldSection
+{
+	int startOffset;
+	int endOffset;
+	vector<HoldTrackInfo> tracks;
+};
+
+int ShortestHoldEnd(const vector<HoldInfo>& holds)
+{
+	ASSERT(holds.size() > 0);
+	int end = INT_MAX;
+	for (const auto& hold : holds)
+		end = min(end, hold.endOffset);
+	return end;
+}
+
+void FindHoldSections(const NoteData& noteData, const NoteGroup& group, vector<HoldSection>& result)
+{
+	ASSERT(group.holdGroup);
+	vector<HoldInfo> holds;
+
+	int sectionStart = group.startOffset;
+	while (sectionStart < group.endOffset)
+	{
+		for (const auto& hold : holds)
+			ASSERT(hold.startOffset == sectionStart);
+		FindHoldsAtRow(noteData, sectionStart, holds);
+		ASSERT(holds.size() >= 1);
+
+		const int nearestEnd = ShortestHoldEnd(holds);
+
+		int nextHold;
+		const int sectionEnd = FindNextRowWithType(noteData, sectionStart, group.endOffset, TapNoteType_HoldHead, nextHold)
+			? nextHold
+			: group.endOffset;
+
+		const int splitPoint = min(sectionEnd, nearestEnd);
+
+		HoldSection section;
+		section.startOffset = sectionStart;
+		section.endOffset = splitPoint;
+
+		vector<HoldInfo> continuedHolds;
+		for (const auto& hold : holds)
+		{
+			ASSERT(hold.endOffset >= splitPoint);
+
+			HoldTrackInfo info;
+			info.roll = hold.roll;
+			info.track = hold.track;
+			section.tracks.push_back(info);
+
+			if (hold.endOffset > splitPoint)
+			{
+				HoldInfo continuation;
+				continuation.roll = hold.roll;
+				continuation.duration = hold.endOffset - splitPoint;
+				continuation.endOffset = hold.endOffset;
+				continuation.startOffset = splitPoint;
+				continuation.track = hold.track;
+				continuedHolds.push_back(continuation);
+			}
+		}
+
+		sectionStart = splitPoint;
+		result.push_back(section);
+		holds = continuedHolds;
+	}
+}
+
+struct HoldLightSection
+{
+	int holdTrackExclusive;
+	bool holdAll;
+	bool roll;
+	int startOffset;
+	int endOffset;
+};
+
+bool HasRoll(const vector<HoldTrackInfo>& tracks)
+{
+	for (const auto& track : tracks)
+		if (track.roll)
+			return true;
+	return false;
+}
+
+void BuildHoldLightSections(const vector<HoldSection>& holds, vector<HoldLightSection>& result)
+{
+	HoldLightSection* lastSection = nullptr;
+	HoldLightSection current;
+	for(int index=0;index<holds.size();index++)
+	{
+		const auto& hold = holds[index];
+		const bool holdAll = hold.tracks.size() > 1;
+		const bool hasRoll = HasRoll(hold.tracks);
+
+		if (lastSection != nullptr && lastSection->holdAll && holdAll && lastSection->roll == hasRoll)
+		{
+			current.endOffset = hold.endOffset;
+			continue;
+		}
+
+		if (index > 0)
+			result.push_back(current);
+
+		current.startOffset = hold.startOffset;
+		current.holdAll = holdAll;
+		current.holdTrackExclusive = !holdAll ? hold.tracks[0].track : -1;
+		current.endOffset = hold.endOffset;
+		current.roll = HasRoll(hold.tracks);
+	}
+	if(holds.size() > 0)
+		result.push_back(current);
+}
+
+struct HoldTrack
+{
+	int track;
+	int startOffset;
+	int endOffset;
+};
+
+void LightSectionsToHoldTracks(const vector<HoldLightSection>& sections, vector<HoldTrack>& result)
+{
+	vector<HoldTrack> tracks;
+	for (int a = 0; a < LIGHT_BASS_LEFT; a++) {
+		HoldTrack track;
+		track.track = a;
+		track.startOffset = -1;
+		track.endOffset = -1;
+		tracks.push_back(track);
+	}
+
+	for (const auto& section : sections)
+	{
+		if (section.roll)
+		{
+			for (auto& track : tracks)
+			{
+				if (track.startOffset < 0)
+					continue;
+				ASSERT(track.endOffset > 0);
+				result.push_back(track);
+				track.startOffset = -1;
+				track.endOffset = -1;
+			}
+			continue;
+		}
+
+		vector<int> noteTracks;
+		if(!section.holdAll)
+			HoldToLightNoteTrackIndices(section.holdTrackExclusive, noteTracks);
+		else
+		{
+			noteTracks.clear();
+			for (int a = 0; a < tracks.size(); a++)
+				noteTracks.push_back(a);
+		}
+
+		for (const auto& trackIndex : noteTracks)
+		{
+			//begin or extend existing hold light
+			auto& item = tracks[trackIndex];
+			if (item.startOffset < 0)
+				item.startOffset = section.startOffset;
+			ASSERT(item.endOffset <= section.endOffset);
+			item.endOffset = section.endOffset;
+		}
+
+		for (auto& track : tracks)
+		{
+			if (track.startOffset < 0)
+				continue;
+			ASSERT(track.endOffset > 0);
+			if (track.endOffset > section.startOffset)
+				continue;
+			result.push_back(track);
+			track.startOffset = -1;
+			track.endOffset = -1;
+		}
+	}
+
+	for (auto& track : tracks)
+	{
+		if (track.startOffset < 0)
+			continue;
+		ASSERT(track.endOffset > 0);
+		result.push_back(track);
+	}
+}
+
+int FindDifferentRow(const vector<LightRow>& rows, const LightRow& pattern)
+{
+	for (int a = 0; a < rows.size(); a++)
+	{
+		if (!LightRowsEqual(rows[a], pattern))
+			return a;
+	}
+
+	sm_crash("All light rows in light pattern were equal."); //this should not be possible
+}
+
+//general idea:
+//- put notes into groups (groups are split based on a distance between notes)
+//- classify each group into a category (groups with notes only, groups with holds, groups with jumps etc.)
+//- assign a predefined pattern to each group
+//- adjust patterns depending on previous group (make a mirrored pattern, use the same pattern again etc.)
+void GenerateLightPatterns(const NoteData& in, NoteData& out)
+{
+	InitAutogenPatterns();
+	RandomGen random(FindHash(in));
+	
+	NoteData reduced(in);
+	ReduceTracks(reduced, LIGHT_BASS_LEFT);
+
+	NoteData normalized;
+	NormalizeNotes(reduced, normalized);
+
+	vector<NoteGroup> allGroups;
+	BuildNoteGroups(normalized, allGroups);
+
+	vector<NoteGroup> splitGroups;
+	for (auto& group : allGroups)
+		SplitNoteGroup(normalized, group, splitGroups);
+
+	const NoteGroup* lastGroup = nullptr;
+	const LightPattern* lastPattern = nullptr;
+	const LightRow* lastRow = nullptr;
+
+	//marquee lights
+	for (auto& group : splitGroups)
+	{
+		if (group.holdGroup)
+		{
+			//blink with every light on each tap. Some of these taps will be overwritten by holds and rolls
+			vector<int> offsets;
+			FindTapOffsetsInRange(normalized, group.startOffset, group.endOffset, offsets);
+			for (const auto& offset : offsets)
+			{
+				for (int a = 0; a < LIGHT_BASS_LEFT; a++)
+					out.SetTapNote(a, offset, TAP_ORIGINAL_TAP);
+			}
+
+			vector<HoldSection> sections;
+			FindHoldSections(normalized, group, sections);
+			vector<HoldLightSection> holdLights;
+			BuildHoldLightSections(sections, holdLights);
+
+			for (const auto& holdLight : holdLights)
+			{
+				vector<int> noteTracks;
+				if (!holdLight.holdAll)
+					HoldToLightNoteTrackIndices(holdLight.holdTrackExclusive, noteTracks);
+				else
+				{
+					noteTracks.clear();
+					for (int a = 0; a < LIGHT_BASS_LEFT; a++)
+						noteTracks.push_back(a);
+				}
+
+				for (const auto& trackIndex : noteTracks)
+					out.ClearRangeForTrack(holdLight.startOffset, holdLight.endOffset, trackIndex);
+
+				if (holdLight.roll)
+				{
+					const int spacing = ROWS_PER_BEAT / 2;
+					const int displacement = holdLight.startOffset % spacing;
+					for (int offset = holdLight.startOffset + (displacement > 0 ? spacing - displacement : 0); offset < holdLight.endOffset; offset += spacing)
+					{
+						for (const auto& trackIndex : noteTracks)
+							out.SetTapNote(trackIndex, offset, TAP_ORIGINAL_TAP);
+					}
+				}
+			}
+
+			vector<HoldTrack> holdTracks;
+			LightSectionsToHoldTracks(holdLights, holdTracks);
+			for (const auto& track : holdTracks)
+				out.AddHoldNote(track.track, track.startOffset, track.endOffset, TAP_ORIGINAL_HOLD_HEAD);
+
+			lastRow = nullptr;
+			continue;
+		}
+
+		vector<int> offsets;
+		FindGroupOffsets(normalized, group, offsets);
+		ASSERT(offsets.size() == group.count);
+
+		if (group.count == 1 || group.jumpGroup)
+		{
+			for (int offset = 0; offset < offsets.size(); offset++)
+				for (int a = 0; a < LIGHT_BASS_LEFT; a++)
+					out.SetTapNote(a, offsets[offset], TAP_ORIGINAL_TAP);
+
+			lastGroup = &group;
+			lastPattern = nullptr;
+			lastRow = nullptr;
+			continue;
+		}
+
+		auto patternSelection = LPS_Random;
+		auto& patternSet = group.count <= 3 ? ShortPatterns : LongPatterns;
+
+		const LightPattern* pattern = nullptr;
+		if (lastGroup != nullptr && lastGroup->count == group.count && !lastGroup->jumpGroup)
+		{
+			int chance = random(100);
+			if (chance < 50)
+				patternSelection = LPS_Random;
+			else if (chance < 75)
+				patternSelection = LPS_Mirror;
+			else
+				patternSelection = LPS_Repeat;
+		}
+
+		if (patternSelection == LPS_Random || lastPattern == nullptr)
+			pattern = &patternSet[random(patternSet.size())];
+		else {
+			ASSERT(lastPattern != nullptr);
+			ASSERT(patternSelection == LPS_Mirror || patternSelection == LPS_Repeat);
+			pattern = lastPattern;
+		}
+
+		//special case: 3 element note streams should always blink with all lights at end
+		const int BLINK_WITH_ALL_GROUP_SIZE = 3;
+
+		ASSERT(pattern != nullptr);
+		const int startIndex = lastRow ? FindDifferentRow(pattern->rows, *lastRow) : 0;
+		ASSERT(offsets.size() <= pattern->rows.size()+startIndex);
+
+		const auto& channelMapping = patternSelection != LPS_Mirror ? StandardMapping : MirroredMapping;
+
+		for (int offset = 0; offset < offsets.size(); offset++)
+		{
+			const auto& row = pattern->rows[offset+startIndex];
+			lastRow = &row;
+			for (int index=0; index < channelMapping.size(); index++)
+			{
+				const int tapLength = row.duration[channelMapping[index]];
+				if (tapLength == 1)
+					out.SetTapNote(index, offsets[offset], TAP_ORIGINAL_TAP);
+				if (tapLength > 1)
+				{
+					const int endIndex = offset + tapLength - 1;
+					ASSERT(endIndex < offsets.size());
+					out.AddHoldNote(index, offsets[offset], offsets[endIndex], TAP_ORIGINAL_HOLD_HEAD);
+				}
+			}
+		}
+
+		if (offsets.size() == BLINK_WITH_ALL_GROUP_SIZE)
+		{
+			for (int a = 0; a < LIGHT_BASS_LEFT; a++)
+				out.SetTapNote(a, offsets[BLINK_WITH_ALL_GROUP_SIZE-1], TAP_ORIGINAL_TAP);
+			lastRow = nullptr;
+		}
+
+		lastPattern = pattern;
+		lastGroup = &group;
+	}
+
+	//bass lights
+	for (auto& group : allGroups)
+	{
+		if (group.holdGroup)
+		{
+			out.AddHoldNote(LIGHT_BASS_LEFT, group.startOffset, group.endOffset, TAP_ORIGINAL_HOLD_HEAD);
+			out.AddHoldNote(LIGHT_BASS_RIGHT, group.startOffset, group.endOffset, TAP_ORIGINAL_HOLD_HEAD);
+			continue;
+		}
+
+		vector<int> offsets;
+		FindTapOffsetsInRange(normalized, group.startOffset, group.endOffset, offsets);
+		for (const auto& offset : offsets)
+		{
+			if (offset % ROWS_PER_BEAT != 0)
+				continue;
+			out.SetTapNote(LIGHT_BASS_LEFT, offset, TAP_ORIGINAL_TAP);
+			out.SetTapNote(LIGHT_BASS_RIGHT, offset, TAP_ORIGINAL_TAP);
+		}
+	}
+}
+
+// For every row in "in" with a tap or hold on any track, enable the specified tracks in "out".
+void BlinkOnAny(const NoteData& in, NoteData& out, const vector<int>& aiTracks)
+{
+	for (unsigned i = 0; i < aiTracks.size(); ++i)
+		ASSERT_M(aiTracks[i] < out.GetNumTracks(), ssprintf("%i, %i", aiTracks[i], out.GetNumTracks()));
+
+	FOREACH_NONEMPTY_ROW_ALL_TRACKS(in, r)
 	{
 		/* If any row starts a hold note, find the end of the hold note, and keep searching
 		 * until we've extended to the end of the latest overlapping hold note. */
 		int iHoldStart = r;
 		int iHoldEnd = -1;
-		for(;;)
+		for (;;)
 		{
-			int iMaxTailRow = FindLongestOverlappingHoldNoteForAnyTrack( in, r );
-			if( iMaxTailRow == -1 )
+			int iMaxTailRow = FindLongestOverlappingHoldNoteForAnyTrack(in, r);
+			if (iMaxTailRow == -1)
 			{
 				break;
 			}
@@ -720,42 +1563,196 @@ void LightTransformHelper( const NoteData &in, NoteData &out, const vector<int> 
 			r = iMaxTailRow;
 		}
 
-		if( iHoldEnd != -1 )
+		if (iHoldEnd != -1)
 		{
 			// If we found a hold note, add it to all tracks.
-			for( unsigned i = 0; i < aiTracks.size(); ++i )
+			for (unsigned i = 0; i < aiTracks.size(); ++i)
 			{
 				int t = aiTracks[i];
-				out.AddHoldNote( t, iHoldStart, iHoldEnd, TAP_ORIGINAL_HOLD_HEAD );
+				out.AddHoldNote(t, iHoldStart, iHoldEnd, TAP_ORIGINAL_HOLD_HEAD);
 			}
 			continue;
 		}
 
-		if( in.IsRowEmpty(r) )
+		if (in.IsRowEmpty(r))
 			continue;
 
 		// Enable every track in the output.
-		for( unsigned i = 0; i < aiTracks.size(); ++i )
+		for (unsigned i = 0; i < aiTracks.size(); ++i)
 		{
 			int t = aiTracks[i];
-			out.SetTapNote( t, r, TAP_ORIGINAL_TAP );
+			out.SetTapNote(t, r, TAP_ORIGINAL_TAP);
 		}
 	}
 }
 
-// For every track enabled in "in", enable all tracks in "out".
-void NoteDataUtil::LoadTransformedLights( const NoteData &in, NoteData &out, int iNewNumTracks )
+void LightTransformHelper(const NoteData& in, NoteData& out, const vector<int>& aiTracks)
+{
+	BlinkOnAny(in, out, aiTracks);
+}
+
+void GenerateBeatLight(const NoteData& in, NoteData& out, int track)
+{
+	out.ClearRangeForTrack(0, MAX_NOTE_ROW, track);
+	const int end = in.GetLastRow();
+	for (int beat = 0; beat < end; beat += ROWS_PER_BEAT)
+		out.SetTapNote(track, beat, TAP_ORIGINAL_TAP);
+}
+
+void CopyTrack(const NoteData& in, NoteData& out, int track)
+{
+	out.ClearRangeForTrack(0, MAX_NOTE_ROW, track);
+	FOREACH_NONEMPTY_ROW_IN_TRACK(in, track, row)
+	{
+		const TapNote& tn = in.GetTapNote(track, row);
+		if (tn.type == TapNoteType_Tap)
+			out.SetTapNote(track, row, TAP_ORIGINAL_TAP);
+		if (tn.type == TapNoteType_HoldHead)
+			out.AddHoldNote(track, row, row + tn.iDuration, tn.subType == TapNoteSubType_Hold ? TAP_ORIGINAL_HOLD_HEAD : TAP_ORIGINAL_ROLL_HEAD);
+	}
+}
+
+//general idea: make lights more toned down (less blinks overall, lower blink frequency)
+//all channels blink in the same way (data from one channel is copied to all other channels)
+//transformation:
+//- use only 4th notes (blink on beat only)
+//- remove notes that are closer than specified minimal blink interval
+//- find distance between two notes (in ms)
+//- replace notes with holds
+//- set hold duration to half of an blink interval
+void BuildLimitedBlinking(const NoteData& in, NoteData& out, const TimingData& timing, float blinkInterval)
+{
+	//lights are simplified - every channel blinks in the same way:
+	NoteData channel;
+	channel.SetNumTracks(1);
+
+	FOREACH_NONEMPTY_ROW_ALL_TRACKS(in, row)
+	{
+		if(row % ROWS_PER_BEAT == 0 && HasNoteTypeAtRow(in, TapNoteType_Tap, row))
+			channel.SetTapNote(0, row, TAP_ORIGINAL_TAP);
+
+		if (!HasNoteTypeAtRow(in, TapNoteType_HoldHead, row))
+			continue;
+		const int end = FindHoldEnd(in, row);
+		const int start = row % ROWS_PER_BEAT == 0 ? row : row + ROWS_PER_BEAT - (row % ROWS_PER_BEAT);
+		for (int offset = start; offset <= end; offset += ROWS_PER_BEAT)
+			channel.SetTapNote(0, offset, TAP_ORIGINAL_TAP);
+	}
+
+
+	NoteData withInterval;
+	withInterval.SetNumTracks(1);
+	float previousElapsed = -blinkInterval * 2;
+	FOREACH_NONEMPTY_ROW_IN_TRACK(channel, 0, row)
+	{
+		const float elapsed = timing.GetElapsedTimeFromBeat(NoteRowToBeat(row));
+		const float interval = elapsed - previousElapsed;
+		if (interval >= blinkInterval * 2)
+		{
+			withInterval.SetTapNote(0, row, TAP_ORIGINAL_TAP);
+			previousElapsed = elapsed;
+		}
+	}
+
+	FOREACH_NONEMPTY_ROW_IN_TRACK(withInterval, 0, row)
+	{
+		int next = row;
+		int hasNext = withInterval.GetNextTapNoteRowForAllTracks(next);
+		const float elapsed = timing.GetElapsedTimeFromBeat(NoteRowToBeat(row));
+		const float toNext = hasNext
+			? timing.GetElapsedTimeFromBeat(NoteRowToBeat(next)) - elapsed
+			: blinkInterval*2;
+
+		const float duration = min(toNext / 2, blinkInterval);
+		const float beat = timing.GetBeatFromElapsedTime(elapsed + duration);
+		const float rowEnd = BeatToNoteRow(beat);
+		for (int a = 0; a < out.GetNumTracks(); a++)
+			out.AddHoldNote(a, row, rowEnd, TAP_ORIGINAL_HOLD_HEAD);
+	}
+}
+
+void NoteDataUtil::NormalizeLightTrack(const NoteData& in, NoteData& out, int iNewNumTracks, const TimingData& timing)
+{
+	out.Init();
+	out.SetNumTracks(iNewNumTracks);
+	if (!g_bLightsPhotosensitivityMode.Get())
+	{
+		out.CopyAll(in);
+		return;
+	}
+
+	out.ClearAll();
+	BuildLimitedBlinking(in, out, timing, g_fLightsPhotosensitivityModeLimiterSeconds.Get());
+}
+
+
+void NoteDataUtil::LoadTransformedLights( const NoteData &in, NoteData &out, int iNewNumTracks, const TimingData& timing )
 {
 	// reset all notes
 	out.Init();
-
 	out.SetNumTracks( iNewNumTracks );
+	const auto marqueeMode = g_LightsCabinetMarquee.Get();
+	const auto bassMode = g_LightsCabinetBass.Get();
 
-	vector<int> aiTracks;
-	for( int i = 0; i < out.GetNumTracks(); ++i )
-		aiTracks.push_back( i );
+	NoteData autogen;
+	autogen.Init();
+	autogen.SetNumTracks(iNewNumTracks);
+	if (marqueeMode == LBM_Autogen || bassMode == LBM_Autogen)
+		GenerateLightPatterns(in, autogen);
 
-	LightTransformHelper( in, out, aiTracks );
+
+	if (marqueeMode == LBM_OnNote)
+	{
+		vector<int> aiTracks;
+		for (int i = 0; i < LIGHT_BASS_LEFT; i++)
+			aiTracks.push_back(i);
+		BlinkOnAny(in, out, aiTracks);
+	}
+	else if (marqueeMode == LBM_EveryBeat)
+	{
+		for (int i = 0; i < LIGHT_BASS_LEFT; i++)
+			GenerateBeatLight(in, out, i);
+	}
+	else if (marqueeMode == LBM_Off)
+	{
+		for (int i = 0; i < LIGHT_BASS_LEFT; i++)
+			out.ClearRangeForTrack(0, MAX_NOTE_ROW, i);
+	}
+	else if (marqueeMode == LBM_Autogen)
+	{
+		for (int i = 0; i < LIGHT_BASS_LEFT; i++)
+			CopyTrack(autogen, out, i);
+	}
+
+	if (bassMode == LBM_EveryBeat)
+	{
+		GenerateBeatLight(in, out, LIGHT_BASS_LEFT);
+		GenerateBeatLight(in, out, LIGHT_BASS_RIGHT);
+	}
+	else if (bassMode == LBM_OnNote)
+	{
+		vector<int> aiTracks;
+		aiTracks.push_back(LIGHT_BASS_LEFT);
+		aiTracks.push_back(LIGHT_BASS_RIGHT);
+		BlinkOnAny(in, out, aiTracks);
+	}
+	else if (bassMode == LBM_Off)
+	{
+		out.ClearRangeForTrack(0, MAX_NOTE_ROW, LIGHT_BASS_LEFT);
+		out.ClearRangeForTrack(0, MAX_NOTE_ROW, LIGHT_BASS_RIGHT);
+	}
+	else if (bassMode == LBM_Autogen)
+	{
+		CopyTrack(autogen, out, LIGHT_BASS_LEFT);
+		CopyTrack(autogen, out, LIGHT_BASS_RIGHT);
+	}
+
+	if (!g_bLightsPhotosensitivityMode.Get())
+		return;
+
+	NoteData fullLights(out);
+	out.ClearAll();
+	BuildLimitedBlinking(fullLights, out, timing, g_fLightsPhotosensitivityModeLimiterSeconds.Get());
 }
 
 // This transform is specific to StepsType_lights_cabinet.

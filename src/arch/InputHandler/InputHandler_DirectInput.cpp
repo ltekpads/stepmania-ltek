@@ -19,8 +19,37 @@ REGISTER_INPUT_HANDLER_CLASS2( DirectInput, DInput );
 
 static vector<DIDevice> Devices;
 
-// Number of joysticks found:
-static int g_iNumJoysticks;
+struct GUIDComparer
+{
+	bool operator()(const GUID& Left, const GUID& Right) const
+	{
+		// comparison logic goes here
+		return memcmp(&Left, &Right, sizeof(Right)) < 0;
+	}
+};
+
+static map<GUID, InputDevice, GUIDComparer> g_JoyMapping; //keep already assigned joy ids in memory so that input auto mapping wont reassing a device to other player
+
+static bool IsMapped(InputDevice device)
+{
+	for (const auto mapping : g_JoyMapping)
+	{
+		if (mapping.second == device)
+			return true;
+	}
+	return false;
+}
+
+static InputDevice FindNotMapped()
+{
+	for(InputDevice device = DEVICE_JOY1; device <= DEVICE_JOY32; device = (InputDevice)(device+1))
+	{
+		if (!IsMapped(device))
+			return device;
+	}
+
+	return InputDevice_Invalid;
+}
 
 static BOOL CALLBACK EnumDevicesCallback( const DIDEVICEINSTANCE *pdidInstance, void *pContext )
 {
@@ -54,12 +83,20 @@ static BOOL CALLBACK EnumDevicesCallback( const DIDEVICEINSTANCE *pdidInstance, 
 	switch( device.type )
 	{
 	case DIDevice::JOYSTICK:
-		if( g_iNumJoysticks == NUM_JOYSTICKS )
+	{
+		auto existing = g_JoyMapping.find(pdidInstance->guidInstance);
+		if (existing != g_JoyMapping.end())
+		{
+			device.dev = existing->second;
+			break;
+		}
+		InputDevice newDevice = FindNotMapped();
+		if (newDevice == InputDevice_Invalid)
 			return DIENUM_CONTINUE;
-
-		device.dev = enum_add2( DEVICE_JOY1, g_iNumJoysticks );
-		g_iNumJoysticks++;
+		device.dev = newDevice;
+		g_JoyMapping.insert({ pdidInstance->guidInstance, newDevice });
 		break;
+	}
 
 	case DIDevice::KEYBOARD:
 		device.dev = DEVICE_KEYBOARD;
@@ -110,6 +147,11 @@ static int GetNumJoysticksSlow()
 	return iCount;
 }
 
+static bool SortById(const DIDevice& a, const DIDevice& b)
+{
+	return a.dev < b.dev;
+}
+
 InputHandler_DInput::InputHandler_DInput()
 {
 	LOG->Trace( "InputHandler_DInput::InputHandler_DInput()" );
@@ -117,7 +159,6 @@ InputHandler_DInput::InputHandler_DInput()
 	CheckForDirectInputDebugMode();
 
 	m_bShutdown = false;
-	g_iNumJoysticks = 0;
 
 	AppInstance inst;
 	HRESULT hr = DirectInput8Create(inst.Get(), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID *) &g_dinput, NULL);
@@ -139,6 +180,8 @@ InputHandler_DInput::InputHandler_DInput()
 	hr = g_dinput->EnumDevices( DI8DEVCLASS_POINTER, EnumDevicesCallback, NULL, DIEDFL_ATTACHEDONLY );
 	if( hr != DI_OK )
 		RageException::Throw( hr_ssprintf(hr, "InputHandler_DInput: IDirectInput::EnumDevices") );
+
+	sort( Devices.begin(), Devices.end(), SortById );
 
 	for( unsigned i = 0; i < Devices.size(); ++i )
 	{

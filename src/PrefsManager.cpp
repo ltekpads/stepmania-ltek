@@ -140,6 +140,25 @@ XToString( BackgroundFitMode );
 StringToX( BackgroundFitMode );
 LuaXType( BackgroundFitMode );
 
+static const char* GamplayButtonBlinkModeNames[] = {
+	"Never",
+	"Always",
+	"DuringAutoPlay",
+};
+XToString( GamplayButtonBlinkMode );
+StringToX( GamplayButtonBlinkMode );
+LuaXType( GamplayButtonBlinkMode );
+
+static const char* LightsBehaviorModeNames[] = {
+	"Off",
+	"Autogen",
+	"OnNote",
+	"EveryBeat",
+};
+XToString(LightsBehaviorMode);
+StringToX(LightsBehaviorMode);
+LuaXType(LightsBehaviorMode);
+
 bool g_bAutoRestart = false;
 #ifdef DEBUG
 # define TRUE_IF_DEBUG true
@@ -248,6 +267,7 @@ PrefsManager::PrefsManager() :
 	m_bShowBeginnerHelper		( "ShowBeginnerHelper",			false ),
 	m_bDisableScreenSaver		( "DisableScreenSaver",			true ),
 	m_sLanguage			( "Language",				"" ),	// ThemeManager will deal with this invalid language
+	m_sLightsDriver			( "LightsDriver",			"" ),	// LightsManager will deal with this
 	m_sMemoryCardProfileSubdir	( "MemoryCardProfileSubdir",		PRODUCT_ID ),
 	m_iProductID			( "ProductID",				1 ),
 	m_iCenterImageTranslateX	( "CenterImageTranslateX",		0 ),

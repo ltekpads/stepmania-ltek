@@ -32,7 +32,7 @@ InputHandler_Win32_Para::InputHandler_Win32_Para()
 
 	USBDevice *dev = new USBDevice;
 
-	if( dev->Open(para_usb_vid, para_usb_pid, sizeof(long), 0, InitHack) )
+	if( dev->Open(para_usb_vid, para_usb_pid, sizeof(long), 0, InitHack, USB_READ ))
 	{
 		LOG->Info("Para controller initialized");
 	}

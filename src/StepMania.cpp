@@ -1202,7 +1202,7 @@ int sm_main(int argc, char* argv[])
 
 	// Do this after ThemeChanged so that we can show a system message
 	RString sMessage;
-	if( INPUTMAPPER->CheckForChangedInputDevicesAndRemap(sMessage) )
+	if( INPUTMAPPER->CheckForChangedInputDevicesAndRemap( AUTO_MAP_FULL, sMessage) )
 		SCREENMAN->SystemMessage( sMessage );
 
 	CodeDetector::RefreshCacheItems();

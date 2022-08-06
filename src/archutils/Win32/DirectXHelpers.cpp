@@ -10,6 +10,7 @@
 #endif
 #if defined(_MSC_VER)
 #  pragma comment(lib, "dxerr.lib")
+#  pragma comment(lib, "legacy_stdio_definitions.lib")
 #endif
 
 RString hr_ssprintf( int hr, const char *fmt, ... )

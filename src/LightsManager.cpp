@@ -14,12 +14,17 @@
 #include "GameManager.h"
 #include "CommonMetrics.h"
 #include "Style.h"
+#include "PlayerState.h"
 
-const RString DEFAULT_LIGHTS_DRIVER = "SystemMessage,Export";
-static Preference<RString> g_sLightsDriver( "LightsDriver", "" ); // "" == DEFAULT_LIGHTS_DRIVER
+const RString DEFAULT_LIGHTS_DRIVER = "SystemMessage"; //use single driver by default so that the menu configuration screen is displayed correctly
 Preference<float>	g_fLightsFalloffSeconds( "LightsFalloffSeconds", 0.1f );
 Preference<float>	g_fLightsAheadSeconds( "LightsAheadSeconds", 0.05f );
-static Preference<bool>	g_bBlinkGameplayButtonLightsOnNote( "BlinkGameplayButtonLightsOnNote", false );
+Preference<LightsBehaviorMode>	g_LightsCabinetMarquee("LightsCabinetMarquee", LBM_Autogen);
+Preference<LightsBehaviorMode>	g_LightsCabinetBass("LightsCabinetBass", LBM_Autogen);
+Preference<bool>	g_bLightsPhotosensitivityMode("LightsPhotosensitivityMode", false);
+Preference<float>	g_fLightsPhotosensitivityModeLimiterSeconds("LightsPhotosensitivityModeLimiterSeconds", 0.4f);
+
+static Preference<GamplayButtonBlinkMode>	g_BlinkGameplayButtonLightsOnNote( "BlinkGameplayButtonLightsOnNote", GBBM_DuringAutoPlay );
 
 static ThemeMetric<RString> GAME_BUTTONS_TO_SHOW( "LightsManager", "GameButtonsToShow" );
 
@@ -99,19 +104,37 @@ static void GetUsedGameInputs( vector<GameInput> &vGameInputsOut )
 
 LightsManager*	LIGHTSMAN = NULL;	// global and accessible from anywhere in our program
 
+const RString FindDefaultDriver()
+{
+	const RString dynamic = LightsDriver::FindAvailable();
+	return dynamic.size() > 0 ? dynamic : DEFAULT_LIGHTS_DRIVER;
+}
+
+const void LightsManager::ListDrivers(vector<RString>& drivers)
+{
+	LightsDriver::ListDrivers(drivers);
+}
+
+const RString LightsManager::FindDisplayName(const RString& driverName)
+{
+	return LightsDriver::FindDisplayName(driverName);
+}
+
 LightsManager::LightsManager()
 {
 	ZERO( m_fSecsLeftInCabinetLightBlink );
 	ZERO( m_fSecsLeftInGameButtonBlink );
 	ZERO( m_fActorLights );
 	ZERO( m_fSecsLeftInActorLightBlink );
+	ZERO( m_Lifebars );
+
 	m_iQueuedCoinCounterPulses = 0;
 	m_CoinCounterTimer.SetZero();
 
 	m_LightsMode = LIGHTSMODE_JOINING;
-	RString sDriver = g_sLightsDriver.Get();
-	if( sDriver.empty() )
-		sDriver = DEFAULT_LIGHTS_DRIVER;
+	RString sDriver = PREFSMAN->m_sLightsDriver.Get();
+	if (sDriver.empty())
+		sDriver = FindDefaultDriver();
 	LightsDriver::Create( sDriver, m_vpDrivers );
 
 	SetLightsMode( LIGHTSMODE_ATTRACT );
@@ -122,6 +145,24 @@ LightsManager::~LightsManager()
 	FOREACH( LightsDriver*, m_vpDrivers, iter )
 		SAFE_DELETE( *iter );
 	m_vpDrivers.clear();
+}
+
+void LightsManager::Reload()
+{
+	FOREACH(LightsDriver*, m_vpDrivers, iter)
+		SAFE_DELETE(*iter);
+	m_vpDrivers.clear();
+
+	RString sDriver = PREFSMAN->m_sLightsDriver.Get();
+	if (sDriver.empty())
+		sDriver = FindDefaultDriver();
+	LightsDriver::Create(sDriver, m_vpDrivers);
+}
+
+void LightsManager::DevicesChanged()
+{
+	FOREACH(LightsDriver*, m_vpDrivers, iter)
+		(*iter)->DevicesChanged();
 }
 
 // XXX: Allow themer to change these. (rewritten; who wrote original? -aj)
@@ -136,6 +177,31 @@ void LightsManager::BlinkActorLight( CabinetLight cl )
 float LightsManager::GetActorLightLatencySeconds() const
 {
 	return g_fLightEffectRiseSeconds;
+}
+
+int FindLifebarLightValue(float lifePercentage)
+{
+	if (lifePercentage <= 0)
+		return 0;
+	if (lifePercentage >= 1)
+		return 100;
+	int asInt = roundf(lifePercentage * 100);
+	if (asInt <= 0)
+		return 1;
+	if (asInt >= 100)
+		return 99;
+	return asInt;
+}
+
+
+void LightsManager::NotifyLifeChanged( PlayerNumber pn, LifebarMode mode, float value )
+{
+	ASSERT(pn < NUM_PlayerNumber);
+	ASSERT(mode < NUM_LightsMode );
+	ASSERT(value >= 0 && value <= 100);
+	m_Lifebars[pn].mode = mode;
+	m_Lifebars[pn].lives = mode == LIFEBARMODE_BATTERY ? value : 0;
+	m_Lifebars[pn].percent = mode == LIFEBARMODE_NORMAL || mode == LIFEBARMODE_SURVIVAL ? FindLifebarLightValue(value) : 0;
 }
 
 void LightsManager::Update( float fDeltaTime )
@@ -179,6 +245,9 @@ void LightsManager::Update( float fDeltaTime )
 	{
 		ZERO( m_LightsState.m_bCabinetLights );
 		ZERO( m_LightsState.m_bGameButtonLights );
+		ZERO( m_LightsState.m_bMenuButtonLights );
+		ZERO( m_LightsState.m_cLifeBarLights );
+		m_LightsState.m_beat = false;
 	}
 
 	{
@@ -220,9 +289,9 @@ void LightsManager::Update( float fDeltaTime )
 			{
 				DEFAULT_FAIL( iTopIndex );
 				case 0:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_LEFT]  = true;	break;
-				case 1:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_LR_RIGHT] = true;	break;
+				case 1:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_DOWN_RIGHT] = true;	break;
 				case 2:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_RIGHT] = true;	break;
-				case 3:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_LR_LEFT]  = true;	break;
+				case 3:	m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_DOWN_LEFT]  = true;	break;
 			}
 
 			if( iTopIndex == 0 )
@@ -259,9 +328,9 @@ void LightsManager::Update( float fDeltaTime )
 			{
 				DEFAULT_FAIL( iLight );
 				case 0:	cl = LIGHT_MARQUEE_UP_LEFT;	break;
-				case 1:	cl = LIGHT_MARQUEE_LR_RIGHT;	break;
+				case 1:	cl = LIGHT_MARQUEE_DOWN_RIGHT;	break;
 				case 2:	cl = LIGHT_MARQUEE_UP_RIGHT;	break;
-				case 3:	cl = LIGHT_MARQUEE_LR_LEFT;	break;
+				case 3:	cl = LIGHT_MARQUEE_DOWN_LEFT;	break;
 			}
 
 			m_LightsState.m_bCabinetLights[cl] = true;
@@ -281,8 +350,16 @@ void LightsManager::Update( float fDeltaTime )
 		case LIGHTSMODE_STAGE:
 		case LIGHTSMODE_ALL_CLEARED:
 		{
-			FOREACH_CabinetLight( cl )
-				m_LightsState.m_bCabinetLights[cl] = true;
+			const float blinkTimeMs = 200;
+			int index = (m_modeSwitchTime.Ago() * 1000) / blinkTimeMs;
+			bool blinkUp = index % 2 == 0;
+			
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_LEFT] = blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_UP_RIGHT] = blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_DOWN_LEFT] = !blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_MARQUEE_DOWN_RIGHT] = !blinkUp;
+			m_LightsState.m_bCabinetLights[LIGHT_BASS_RIGHT] = false;
+			m_LightsState.m_bCabinetLights[LIGHT_BASS_LEFT] = false;
 
 			break;
 		}
@@ -336,6 +413,7 @@ void LightsManager::Update( float fDeltaTime )
 			/* Blink menu lights on the first half of the beat */
 			if( fracf(fLightSongBeat) <= 0.5f )
 			{
+				m_LightsState.m_beat = GAMESTATE->m_Position.m_bHasTiming;
 				FOREACH_PlayerNumber( pn )
 				{
 					if( !GAMESTATE->m_bSideIsJoined[pn] )
@@ -358,12 +436,35 @@ void LightsManager::Update( float fDeltaTime )
 		case LIGHTSMODE_GAMEPLAY:
 		{
 			bool bGameplay = (m_LightsMode == LIGHTSMODE_DEMONSTRATION) || (m_LightsMode == LIGHTSMODE_GAMEPLAY);
+			m_LightsState.m_beat = fracf(GAMESTATE->m_Position.m_fLightSongBeat) <= 0.5f && GAMESTATE->m_Position.m_bHasTiming;
+
+			if (bGameplay)
+			{
+				FOREACH_ENUM(PlayerNumber, pn)
+				{
+					if (!GAMESTATE->m_bSideIsJoined[pn])
+					{
+						continue;
+					}
+					LifebarData& state = m_Lifebars[pn];
+					LifebarState& target = m_LightsState.m_cLifeBarLights[pn];
+					target.present = true;
+					target.lives = state.lives;
+					target.percent = state.percent;
+					target.mode = state.mode;
+				}
+			}
 
 			// Blink on notes during gameplay.
-			if( bGameplay && g_bBlinkGameplayButtonLightsOnNote )
+			if( bGameplay && g_BlinkGameplayButtonLightsOnNote != GBBM_Never )
 			{
 				FOREACH_ENUM( GameController,  gc )
 				{
+					bool isCpu = GAMESTATE->m_pPlayerState[gc]->m_PlayerController != PC_HUMAN;
+					bool shouldBlink = (g_BlinkGameplayButtonLightsOnNote == GBBM_DuringAutoPlay && isCpu)
+						|| g_BlinkGameplayButtonLightsOnNote == GBBM_Always;
+					if (!shouldBlink)
+						continue;
 					FOREACH_ENUM( GameButton,  gb )
 					{
 						m_LightsState.m_bGameButtonLights[gc][gb] = m_fSecsLeftInGameButtonBlink[gc][gb] > 0 ;
@@ -384,6 +485,11 @@ void LightsManager::Update( float fDeltaTime )
 				{
 					bool bOn = INPUTMAPPER->IsBeingPressed( GameInput(gc,gb) );
 					m_LightsState.m_bGameButtonLights[gc][gb] = bOn;
+				}
+				for (int a = GAME_BUTTON_MENULEFT; a <= GAME_BUTTON_BACK; a++)
+				{
+					bool bOn = INPUTMAPPER->IsBeingPressed(GameInput(gc, (GameButton)a));
+					m_LightsState.m_bMenuButtonLights[gc][a] = bOn;
 				}
 			}
 
@@ -429,11 +535,23 @@ void LightsManager::Update( float fDeltaTime )
 	// blink the menu buttons rapidly so they'll press Start
 	{
 		int iBeat = (int)(GAMESTATE->m_Position.m_fLightSongBeat*4);
-		bool bBlinkOn = (iBeat%2)==0;
+		bool bBlinkOn = iBeat==0;
 		FOREACH_PlayerNumber( pn )
 		{
 			if( !GAMESTATE->m_bSideIsJoined[pn] && GAMESTATE->PlayersCanJoin() && GAMESTATE->EnoughCreditsToJoin() )
 				m_LightsState.m_bGameButtonLights[pn][GAME_BUTTON_START] = bBlinkOn;
+		}
+	}
+
+	//combine each player menu input state with cabinet controlled lights
+	{
+		FOREACH_PlayerNumber(pn)
+		{
+			for (int a = GAME_BUTTON_MENULEFT; a <= GAME_BUTTON_SELECT; a++)
+			{
+				bool userInput = m_LightsState.m_bMenuButtonLights[pn][a];
+				m_LightsState.m_bGameButtonLights[pn][a] |= userInput;
+			}
 		}
 	}
 
@@ -458,6 +576,7 @@ void LightsManager::SetLightsMode( LightsMode lm )
 	m_fTestAutoCycleCurrentIndex = 0;
 	m_clTestManualCycleCurrent = CabinetLight_Invalid;
 	m_iControllerTestManualCycleCurrent = -1;
+	m_modeSwitchTime.SetZero();
 }
 
 LightsMode LightsManager::GetLightsMode()

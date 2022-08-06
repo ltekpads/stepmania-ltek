@@ -4,7 +4,7 @@
 #include "InputMapper.h"
 #include "PrefsManager.h"
 
-REGISTER_LIGHTS_DRIVER_CLASS(SystemMessage);
+REGISTER_LIGHTS_DRIVER_CLASS(SystemMessage, "Debug");
 
 LightsDriver_SystemMessage::LightsDriver_SystemMessage()
 {
@@ -39,6 +39,13 @@ void LightsDriver_SystemMessage::Set( const LightsState *ls )
 		}
 		s += "\n";
 	}
+	FOREACH_ENUM(PlayerNumber, pn)
+	{
+		const LifebarState* bar = &ls->m_cLifeBarLights[pn];
+		s += ssprintf("Lifebar%d: %i\n", pn + 1, bar->present ? (bar->lives > 0 ? bar->lives : bar->percent) : 0);
+	}
+
+	s += ssprintf("Beat: %d\n", ls->m_beat);
 
 	SCREENMAN->SystemMessageNoAnimate( s );
 }

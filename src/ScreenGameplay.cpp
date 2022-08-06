@@ -1409,6 +1409,8 @@ void ScreenGameplay::LoadLights()
 	const Steps *pSteps = SongUtil::GetClosestNotes( GAMESTATE->m_pCurSong, StepsType_lights_cabinet, Difficulty_Medium );
 	if( pSteps != NULL )
 	{
+		NoteData copy(m_CabinetLightsNoteData);
+		NoteDataUtil::NormalizeLightTrack(copy, m_CabinetLightsNoteData, GAMEMAN->GetStepsTypeInfo(StepsType_lights_cabinet).iNumTracks, *pSteps->GetTimingData());
 		pSteps->GetNoteData( m_CabinetLightsNoteData );
 		return;
 	}
@@ -1452,7 +1454,7 @@ void ScreenGameplay::LoadLights()
 	NoteData TapNoteData1;
 	pSteps->GetNoteData( TapNoteData1 );
 
-	NoteDataUtil::LoadTransformedLights( TapNoteData1, m_CabinetLightsNoteData, GAMEMAN->GetStepsTypeInfo(StepsType_lights_cabinet).iNumTracks );
+	NoteDataUtil::LoadTransformedLights( TapNoteData1, m_CabinetLightsNoteData, GAMEMAN->GetStepsTypeInfo(StepsType_lights_cabinet).iNumTracks, *pSteps->GetTimingData());
 }
 
 void ScreenGameplay::StartPlayingSong( float fMinTimeToNotes, float fMinTimeToMusic )
@@ -1580,7 +1582,7 @@ void ScreenGameplay::UpdateSongPosition( float fDeltaTime )
 	RageTimer tm;
 	const float fSeconds = m_pSoundMusic->GetPositionSeconds( NULL, &tm );
 	const float fAdjust = SOUND->GetFrameTimingAdjustment( fDeltaTime );
-	GAMESTATE->UpdateSongPosition( fSeconds+fAdjust, GAMESTATE->m_pCurSong->m_SongTiming, tm+fAdjust );
+	GAMESTATE->UpdateSongPosition( fSeconds+fAdjust, GAMESTATE->m_pCurSong->m_SongTiming, true, tm+fAdjust );
 }
 
 void ScreenGameplay::BeginScreen()

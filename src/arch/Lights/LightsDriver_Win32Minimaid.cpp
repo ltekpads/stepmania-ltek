@@ -8,7 +8,7 @@
 #include "LightsDriver_Win32Minimaid.h"
 #include "windows.h"
 
-REGISTER_LIGHTS_DRIVER_CLASS( Win32Minimaid );
+REGISTER_LIGHTS_DRIVER_CLASS( Win32Minimaid, "Minimaid" );
 
 HINSTANCE hMMMAGICDLL = NULL;
 
@@ -76,8 +76,8 @@ void LightsDriver_Win32Minimaid::Set( const LightsState *ls )
 		// Set the cabinet light values
 		if (ls->m_bCabinetLights[LIGHT_MARQUEE_UP_LEFT]) mm_setDDRCabinetLight(DDR_DOUBLE_MARQUEE_UPPER_LEFT, 1);
 		if (ls->m_bCabinetLights[LIGHT_MARQUEE_UP_RIGHT]) mm_setDDRCabinetLight(DDR_DOUBLE_MARQUEE_UPPER_RIGHT, 1);
-		if (ls->m_bCabinetLights[LIGHT_MARQUEE_LR_LEFT]) mm_setDDRCabinetLight(DDR_DOUBLE_MARQUEE_LOWER_LEFT, 1);
-		if (ls->m_bCabinetLights[LIGHT_MARQUEE_LR_RIGHT]) mm_setDDRCabinetLight(DDR_DOUBLE_MARQUEE_LOWER_RIGHT, 1);
+		if (ls->m_bCabinetLights[LIGHT_MARQUEE_DOWN_LEFT]) mm_setDDRCabinetLight(DDR_DOUBLE_MARQUEE_LOWER_LEFT, 1);
+		if (ls->m_bCabinetLights[LIGHT_MARQUEE_DOWN_RIGHT]) mm_setDDRCabinetLight(DDR_DOUBLE_MARQUEE_LOWER_RIGHT, 1);
 		if (ls->m_bCabinetLights[LIGHT_BASS_LEFT] || ls->m_bCabinetLights[LIGHT_BASS_RIGHT]) mm_setDDRBassLight(DDR_DOUBLE_BASS_LIGHTS, 1);
 
 		if (ls->m_bGameButtonLights[GameController_1][DANCE_BUTTON_LEFT]) mm_setDDRPad1Light(DDR_DOUBLE_PAD_LEFT, 1);

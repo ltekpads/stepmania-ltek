@@ -6,16 +6,21 @@
 #include "EnumHelper.h"
 #include "Preference.h"
 #include "RageTimer.h"
+#include "PrefsManager.h"
 
 extern Preference<float>	g_fLightsFalloffSeconds;
 extern Preference<float>	g_fLightsAheadSeconds;
+extern Preference<LightsBehaviorMode>	g_LightsCabinetMarquee;
+extern Preference<LightsBehaviorMode>	g_LightsCabinetBass;
+extern Preference<bool>	g_bLightsPhotosensitivityMode;
+extern Preference<float>	g_fLightsPhotosensitivityModeLimiterSeconds;
 
 enum CabinetLight
 {
 	LIGHT_MARQUEE_UP_LEFT,
 	LIGHT_MARQUEE_UP_RIGHT,
-	LIGHT_MARQUEE_LR_LEFT,
-	LIGHT_MARQUEE_LR_RIGHT,
+	LIGHT_MARQUEE_DOWN_LEFT,
+	LIGHT_MARQUEE_DOWN_RIGHT,
 	LIGHT_BASS_LEFT,
 	LIGHT_BASS_RIGHT,
 	NUM_CabinetLight,
@@ -44,13 +49,43 @@ enum LightsMode
 const RString& LightsModeToString( LightsMode lm );
 LuaDeclareType( LightsMode );
 
+enum LifebarMode
+{
+	LIFEBARMODE_NORMAL,
+	LIFEBARMODE_SURVIVAL,
+	LIFEBARMODE_BATTERY,
+	NUM_LifebarMode,
+	LifebarMode_Invalid
+};
+
+struct LifebarState
+{
+	bool present;
+	LifebarMode mode;
+	int percent; //used by LifeMeterBar and LifeMeterTime
+	int lives; // used by LifeMetterBattery
+};
+
 struct LightsState
 {
 	bool m_bCabinetLights[NUM_CabinetLight];
 	bool m_bGameButtonLights[NUM_GameController][NUM_GameButton];
+	bool m_bMenuButtonLights[NUM_GameController][GAME_BUTTON_BACK+1];
+
+	LifebarState m_cLifeBarLights[NUM_GameController];
 
 	// This isn't actually a light, but it's typically implemented in the same way.
 	bool m_bCoinCounter;
+
+	//light pulsing to the beat of the current song
+	bool m_beat;
+};
+
+struct LifebarData
+{
+	LifebarMode mode;
+	int percent; //used by LifeMeterBar and LifeMeterTime
+	int lives; // used by LifeMetterBattery
 };
 
 class LightsDriver;
@@ -63,6 +98,10 @@ public:
 
 	void Update( float fDeltaTime );
 	bool IsEnabled() const;
+	void Reload();
+	void DevicesChanged();
+	const void ListDrivers(vector<RString>& drivers);
+	const RString FindDisplayName(const RString& driverName);
 
 	void BlinkCabinetLight( CabinetLight cl );
 	void BlinkGameButton( GameInput gi );
@@ -71,6 +110,7 @@ public:
 	float GetActorLightLatencySeconds() const;
 
 	void SetLightsMode( LightsMode lm );
+	void NotifyLifeChanged( PlayerNumber pn, LifebarMode mode, float value );
 	LightsMode GetLightsMode();
 
 	void PrevTestCabinetLight()		{ ChangeTestCabinetLight(-1); }
@@ -89,6 +129,7 @@ private:
 	float m_fSecsLeftInGameButtonBlink[NUM_GameController][NUM_GameButton];
 	float m_fActorLights[NUM_CabinetLight];	// current "power" of each actor light
 	float m_fSecsLeftInActorLightBlink[NUM_CabinetLight];	// duration to "power" an actor light
+	LifebarData m_Lifebars[NUM_PlayerNumber];
 
 	vector<LightsDriver*> m_vpDrivers;
 	LightsMode m_LightsMode;
@@ -100,6 +141,7 @@ private:
 	int GetTestAutoCycleCurrentIndex() { return (int)m_fTestAutoCycleCurrentIndex; }
 
 	float			m_fTestAutoCycleCurrentIndex;
+	RageTimer	m_modeSwitchTime;
 	CabinetLight	m_clTestManualCycleCurrent;
 	int				m_iControllerTestManualCycleCurrent;
 };

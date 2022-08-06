@@ -1,13 +1,29 @@
 #include "global.h"
 #include "RageDriver.h"
 
-void DriverList::Add( const istring &sName, CreateRageDriverFn pfn )
+void DriverList::Add( const istring &sName, const istring& sDisplayName, CreateRageDriverFn pfn )
 {
 	if( m_pRegistrees == NULL )
 		m_pRegistrees = new map<istring, CreateRageDriverFn>;
+	if (m_pDisplayNames == NULL)
+		m_pDisplayNames = new map<istring, istring>;
 	
 	ASSERT( m_pRegistrees->find(sName) == m_pRegistrees->end() );
+	ASSERT(m_pDisplayNames->find(sName) == m_pDisplayNames->end() );
 	(*m_pRegistrees)[sName] = pfn;
+	if(sDisplayName.length() > 0)
+		(*m_pDisplayNames)[sName] = sDisplayName;
+}
+
+const RString DriverList::FindDisplayName(const RString& sDriverName)
+{
+	if( m_pDisplayNames == NULL )
+		return "";
+
+	auto match = m_pDisplayNames->find(istring(sDriverName));
+	return match != m_pDisplayNames->end()
+		? RString(match->second.c_str())
+		: sDriverName;
 }
 
 RageDriver *DriverList::Create( const RString &sDriverName )
@@ -21,9 +37,9 @@ RageDriver *DriverList::Create( const RString &sDriverName )
 	return (iter->second)();
 }
 
-RegisterRageDriver::RegisterRageDriver( DriverList *pDriverList, const istring &sName, CreateRageDriverFn pfn )
+RegisterRageDriver::RegisterRageDriver( DriverList *pDriverList, const istring &sName, const istring &sDisplayName, CreateRageDriverFn pfn )
 {
-	pDriverList->Add( sName, pfn );
+	pDriverList->Add( sName, sDisplayName, pfn );
 }
 
 /*

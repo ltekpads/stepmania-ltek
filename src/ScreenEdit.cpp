@@ -1655,7 +1655,7 @@ void ScreenEdit::Update( float fDeltaTime )
 	{
 		RageTimer tm;
 		const float fSeconds = m_pSoundMusic->GetPositionSeconds( NULL, &tm );
-		GAMESTATE->UpdateSongPosition( fSeconds, GAMESTATE->m_pCurSong->m_SongTiming, tm );
+		GAMESTATE->UpdateSongPosition( fSeconds, GAMESTATE->m_pCurSong->m_SongTiming, true, tm );
 	}
 
 	if(m_EditState == STATE_EDITING)
@@ -3391,7 +3391,7 @@ void ScreenEdit::TransitionEditState( EditState em )
 		/* Give a lead-in.  If we're loading Player, this must be done first.
 		 * Also be sure to get the right timing. */
 		float fSeconds = GetAppropriateTiming().GetElapsedTimeFromBeat( NoteRowToBeat(m_iStartPlayingAt) ) - PREFSMAN->m_EditRecordModeLeadIn;
-		GAMESTATE->UpdateSongPosition( fSeconds, GetAppropriateTiming(), RageZeroTimer );
+		GAMESTATE->UpdateSongPosition( fSeconds, GetAppropriateTiming(), false, RageZeroTimer );
 
 		GAMESTATE->m_bGameplayLeadIn.Set( false );
 		

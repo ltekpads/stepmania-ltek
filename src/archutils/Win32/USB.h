@@ -6,17 +6,24 @@
 #include <vector>
 #include <windows.h>
 
+enum WindowsFileMode
+{
+	WINDOWS_READ = 1,
+	WINDOWS_WRITE = 2
+};
+
 class WindowsFileIO
 {
 public:
 	WindowsFileIO();
 	~WindowsFileIO();
-	bool Open( RString sPath, int iBlockSize );
+	bool Open( RString sPath, int iBlockSize, WindowsFileMode mode);
 	bool IsOpen() const;
 
 	/* Nonblocking read.  size must always be the same.  Returns the number of bytes
 	 * read, or 0. */
 	int read( void *p );
+	bool write(const char* buffer, int length);
 	static int read_several( const vector<WindowsFileIO *> &sources, void *p, int &actual, float timeout );
 
 private:
@@ -29,15 +36,36 @@ private:
 	int m_iBlockSize;
 };
 
+enum USBMode
+{
+	USB_READ = 1,
+	USB_WRITE = 2,
+};
+
+inline USBMode operator&(USBMode a, USBMode b)
+{
+	return static_cast<USBMode>(static_cast<int>(a) & static_cast<int>(b));
+}
+
+inline USBMode operator|(USBMode a, USBMode b)
+{
+	return static_cast<USBMode>(static_cast<int>(a) | static_cast<int>(b));
+}
+
 /* WindowsFileIO - Windows USB I/O */
 class USBDevice
 {
 public:
 	int GetPadEvent();
-	bool Open( int iVID, int iPID, int iBlockSize, int iNum, void (*pfnInit)(HANDLE) );
+	bool Open( int iVID, int iPID, int iBlockSize, int iNum, void (*pfnInit)(HANDLE), USBMode mode);
 	bool IsOpen() const;
 
 	WindowsFileIO m_IO;
+};
+
+template<typename T> struct HidReport {
+	char reportType;
+	T data;
 };
 
 #endif

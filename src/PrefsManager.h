@@ -123,6 +123,26 @@ enum BackgroundFitMode
 	BackgroundFitMode_Invalid
 };
 
+enum GamplayButtonBlinkMode
+{
+	GBBM_Never,
+	GBBM_Always,
+	GBBM_DuringAutoPlay,
+	NUM_GamplayButtonBlinkMode,
+	GamplayButtonBlinkMode_Invalid
+};
+
+enum LightsBehaviorMode
+{
+	LBM_Off,
+	LBM_Autogen,
+	LBM_OnNote,
+	LBM_EveryBeat,
+	NUM_LightsBehaviorMode,
+	LightsBehaviorMode_Invalid
+};
+
+
 /** @brief Holds user-chosen preferences that are saved between sessions. */
 class PrefsManager
 {
@@ -239,6 +259,7 @@ public:
 	Preference<bool>	m_bShowBeginnerHelper;
 	Preference<bool>	m_bDisableScreenSaver;
 	Preference<RString>	m_sLanguage;
+	Preference<RString>	m_sLightsDriver;
 	Preference<RString>	m_sMemoryCardProfileSubdir; // the directory on a memory card to look in for a profile
 	Preference<int>	m_iProductID; // Saved in HighScore to track what software version a score came from.
 	Preference<int>	m_iCenterImageTranslateX;

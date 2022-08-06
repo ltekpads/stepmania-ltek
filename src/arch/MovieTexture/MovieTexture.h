@@ -36,7 +36,7 @@ public:
 };
 
 #define REGISTER_MOVIE_TEXTURE_CLASS( name ) \
-	static RegisterRageDriver register_##name( &RageMovieTextureDriver::m_pDriverList, #name, CreateClass<RageMovieTextureDriver_##name, RageDriver> )
+	static RegisterRageDriver register_##name( &RageMovieTextureDriver::m_pDriverList, #name, "", CreateClass<RageMovieTextureDriver_##name, RageDriver> )
 
 #endif
 

@@ -4,25 +4,49 @@
 #include "LightsManager.h"
 #include "arch/RageDriver.h"
 
+typedef bool (*CheckAvailabilityFn)();
+
+struct AvailabilityList
+{
+	void Add(const istring& sName, CheckAvailabilityFn pfn);
+	bool IsAvailable(const RString& sDriverName);
+	map<istring, CheckAvailabilityFn>* m_pRegistrees;
+};
+
+struct RegisterAvailabilityCheck
+{
+	RegisterAvailabilityCheck(AvailabilityList* pList, const istring& sName, CheckAvailabilityFn pfn);
+};
+
 struct LightsState;
 /** @brief Controls the lights. */
 class LightsDriver: public RageDriver
 {
 public:
 	static void Create( const RString &sDriver, vector<LightsDriver *> &apAdd );
+	static const RString FindAvailable();
+	static const void ListDrivers(vector<RString>& drivers);
+	static const RString FindDisplayName(const RString& driverName);
 	static DriverList m_pDriverList;
+	static AvailabilityList m_pAvailabilityList;
 
 	LightsDriver() {};
 	virtual ~LightsDriver() {};
 
 	virtual void Set( const LightsState *ls ) = 0;
+	virtual void DevicesChanged() {}
 };
 
-#define REGISTER_LIGHTS_DRIVER_CLASS2( name, x ) \
-	static RegisterRageDriver register_##x( &LightsDriver::m_pDriverList, #name, CreateClass<LightsDriver_##x, RageDriver> )
-#define REGISTER_LIGHTS_DRIVER_CLASS( name ) REGISTER_LIGHTS_DRIVER_CLASS2( name, name )
+#define REGISTER_LIGHTS_DRIVER_CLASS2( name, x, displayName ) \
+	static RegisterRageDriver register_##x( &LightsDriver::m_pDriverList, #name, displayName, CreateClass<LightsDriver_##x, RageDriver> )
+#define REGISTER_LIGHTS_DRIVER_CLASS( name, displayName ) REGISTER_LIGHTS_DRIVER_CLASS2( name, name, displayName )
+
+#define REGISTER_LIGHTS_DRIVER_AVAILABILITY_CHECK2( name, x ) \
+	static RegisterAvailabilityCheck check_##x( &LightsDriver::m_pAvailabilityList, #name, Check_##x )
+#define REGISTER_LIGHTS_DRIVER_AVAILABILITY_CHECK( name ) REGISTER_LIGHTS_DRIVER_AVAILABILITY_CHECK2( name, name )
 
 #endif
+
 
 /**
  * @file
