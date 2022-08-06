@@ -2636,6 +2636,8 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 		}
 	}
 
+	const auto songFinished = GAMESTATE->m_Position.m_fMusicSeconds >= GAMESTATE->m_pCurSong->GetLastSecond();
+
 	FOREACH_EnabledPlayerInfo(m_vPlayerInfo, pi)
 	{
 		const auto pn = pi->m_pn;
@@ -2645,10 +2647,16 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 		result.startDate = m_dtStartDate;
 		result.endDate = DateTime::GetNowDateTimeUtc();
 		result.playerNumber = pn;
-		result.result = bBackedOut ? ClearResult_Exited : ClearResult_Cleared;
 		result.steps = GAMESTATE->m_pCurSteps[pn];
 		result.song = GAMESTATE->m_pCurSong;
-		result.stats = pi->GetPlayerStageStats();
+		const auto stats = pi->GetPlayerStageStats();
+		result.stats = stats;
+		result.result = bBackedOut
+			? ClearResult_Exited
+			: (!stats->m_bFailed
+				? ClearResult_Cleared
+				: (songFinished ? ClearResult_FailedEndOfSong : ClearResult_FailedImmediate)
+			);
 		result.notes = &pi->m_pPlayer->GetNoteData();
 		result.playerOptions = &pi->GetPlayerState()->m_PlayerOptions;
 		PLAYDATA->SaveResult(PROFILEMAN->GetProfile(pn)->m_sGuid, result);
