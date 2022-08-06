@@ -60,6 +60,7 @@
 #include "RageFileManager.h"
 #include "Bookkeeper.h"
 #include "LightsManager.h"
+#include "PlayDataManager.h"
 #include "ModelManager.h"
 #include "CryptManager.h"
 #include "NetworkSyncManager.h"
@@ -307,6 +308,7 @@ void ShutdownGame()
 	SAFE_DELETE( THEME );
 	SAFE_DELETE( ANNOUNCER );
 	SAFE_DELETE( BOOKKEEPER );
+	SAFE_DELETE( PLAYDATA );
 	SAFE_DELETE( LIGHTSMAN );
 	SAFE_DELETE( SOUNDMAN );
 	SAFE_DELETE( FONT );
@@ -1158,6 +1160,8 @@ int sm_main(int argc, char* argv[])
 	CHARMAN		= new CharacterManager;
 	PROFILEMAN	= new ProfileManager;
 	PROFILEMAN->Init();				// must load after SONGMAN
+	PLAYDATA = new PlayDataManager;
+
 	UNLOCKMAN	= new UnlockManager;
 	SONGMAN->UpdatePopular();
 	SONGMAN->UpdatePreferredSort();
