@@ -8,6 +8,7 @@
 #include "json/writer.h"
 #include "LifeMeterBar.h"
 #include "GameState.h"
+#include "ScreenOptionsMasterPrefs.h"
 
 //you need to manuallly create a sqlite3 visual studio project and add a dependency to a static sqlite3 library in order to compile this code under visual studio
 //pull requests adding sqlite3 to makefile definition are welcomed :)
@@ -284,6 +285,7 @@ RString PlayResult::ToDifficultyInfo() const
 
 	Json::Value timing;
 
+	timing["timingDifficulty"] = GetTimingDifficulty();
 	timing["timingWindowAdd"] = roundFloat(Player::GetWindowAdd());
 	timing["timingWindowJump"] = roundFloat(Player::GetWindowJump());
 	timing["timingWindowScale"] = roundFloat(Player::GetWindowScale());
@@ -302,6 +304,7 @@ RString PlayResult::ToDifficultyInfo() const
 	Json::Value life;
 	LifeMeterBar bar;
 
+	life["lifeDifficulty"] = GetTimingDifficulty();
 	life["harshHotLifePenalty"] = (bool)PREFSMAN->m_HarshHotLifePenalty;
 	life["lifeDifficultyScale"] = (float)PREFSMAN->m_fLifeDifficultyScale;
 	life["progressiveLifebar"] = (int)PREFSMAN->m_iProgressiveLifebar;

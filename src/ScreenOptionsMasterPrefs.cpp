@@ -516,7 +516,7 @@ static void MaxHighScoresPerListForPlayer(int& sel, bool to_sel, ConfOption cons
 
 
 #include "LuaManager.h"
-static int GetTimingDifficulty()
+int GetTimingDifficulty()
 {
 	int iTimingDifficulty = 0;
 	TimingWindowScale( iTimingDifficulty, true, ConfOption::Find("TimingWindowScale") );	
@@ -524,7 +524,7 @@ static int GetTimingDifficulty()
 	return iTimingDifficulty;
 }
 LuaFunction( GetTimingDifficulty, GetTimingDifficulty() );
-static int GetLifeDifficulty()
+int GetLifeDifficulty()
 {
 	int iLifeDifficulty = 0;
 	LifeDifficulty( iLifeDifficulty, true, ConfOption::Find("LifeDifficulty") );	
