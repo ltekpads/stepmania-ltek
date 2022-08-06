@@ -10,9 +10,18 @@ public:
 	PlayDataManager();
 	~PlayDataManager();
 
+	void ActivateProfile(const RString& guid, const RString& displayName, const RString& highScoreName);
+	void DeactivateProfile(const RString& guid);
+
 private:
 	sqlite3* _db;
+
 	const RString ResolveDbPath(const RString& path);
+	int GetProfile(const RString& guid);
+	void CreateProfile(const RString& guid);
+	int GetOrCreateProfile(const RString& guid);
+
+	sqlite3_stmt* Prepare(const char* query);
 };
 
 extern PlayDataManager* PLAYDATA;

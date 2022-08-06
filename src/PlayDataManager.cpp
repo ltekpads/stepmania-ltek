@@ -5,6 +5,20 @@
 //you need to manuallly create a sqlite3 visual studio project and add a dependency to a static sqlite3 library in order to compile this code under visual studio
 //pull requests adding sqlite3 to makefile definition are welcomed :)
 
+void BindText(sqlite3_stmt* statement, int index, const char* text)
+{
+	const auto bindResult = text != nullptr
+		? sqlite3_bind_text(statement, index + 1, text, strlen(text), 0)
+		: sqlite3_bind_null(statement, index + 1);
+	ASSERT(bindResult == SQLITE_OK);
+}
+
+void BindInt(sqlite3_stmt* statement, int index, int value)
+{
+	const auto bindResult = sqlite3_bind_int(statement, index + 1, value);
+	ASSERT(bindResult == SQLITE_OK);
+}
+
 
 PlayDataManager* PLAYDATA = NULL;
 const RString PLAY_DATA_DB_FILE = "Save/PlayData.sqlite";
@@ -37,6 +51,27 @@ const char* CreateDb =
 "	PRIMARY KEY(Id AUTOINCREMENT)"
 ");";
 
+class StatementFinalizer
+{
+public:
+	sqlite3_stmt* _statement;
+	StatementFinalizer(sqlite3_stmt* stmt);
+	~StatementFinalizer();
+};
+
+StatementFinalizer::StatementFinalizer(sqlite3_stmt* statement)
+{
+	ASSERT(statement != NULL);
+	_statement = statement;
+}
+
+StatementFinalizer::~StatementFinalizer()
+{
+	if (_statement)
+		sqlite3_finalize(_statement);
+	_statement = nullptr;
+}
+
 PlayDataManager::PlayDataManager()
 {
 	const auto shouldInit = !FILEMAN->DoesFileExist(PLAY_DATA_DB_FILE);
@@ -47,6 +82,8 @@ PlayDataManager::PlayDataManager()
 
 	if (shouldInit)
 		sqlite3_exec(_db, CreateDb, nullptr, nullptr, nullptr);
+
+	sqlite3_exec(_db, "udpate Profiles set IsAvailable=0;", nullptr, nullptr, nullptr);
 }
 
 const RString PlayDataManager::ResolveDbPath(const RString& path)
@@ -58,6 +95,76 @@ const RString PlayDataManager::ResolveDbPath(const RString& path)
 	const auto fullPath = testAccess->GetDisplayPath();
 	delete testAccess;
 	return fullPath;
+}
+
+void PlayDataManager::DeactivateProfile(const RString& guid)
+{
+	const auto id = GetProfile(guid);
+	if (id < 0)
+		return;
+	const auto query = Prepare("update Profiles set IsAvailable=0 where Id = ?;");
+	StatementFinalizer f(query);
+	BindInt(query, 0, id);
+
+	const auto result = sqlite3_step(query);
+	ASSERT(result == SQLITE_DONE);
+}
+
+void PlayDataManager::ActivateProfile(const RString& guid, const RString& displayName, const RString& highScoreName)
+{
+	const auto query = Prepare("update Profiles set IsAvailable=1, DisplayName = ?, LastUsedHighScoreName = ? where Id = ?;");
+	StatementFinalizer f(query);
+
+	const auto id = GetOrCreateProfile(guid);
+	BindText(query, 0, !displayName.empty() ? displayName.c_str() : nullptr);
+	BindText(query, 1, !highScoreName.empty() ? highScoreName.c_str() : nullptr);
+	BindInt(query, 2, id);
+
+	const auto result = sqlite3_step(query);
+	ASSERT(result == SQLITE_DONE);
+}
+
+sqlite3_stmt* PlayDataManager::Prepare(const char* query)
+{
+	sqlite3_stmt* queryHandle;
+	const auto result = sqlite3_prepare_v2(_db, query, -1, &queryHandle, nullptr);
+	ASSERT(result == SQLITE_OK);
+	return queryHandle;
+}
+
+int PlayDataManager::GetOrCreateProfile(const RString& guid)
+{
+	auto existing = GetProfile(guid);
+	if (!existing)
+		CreateProfile(guid);
+	const auto id = GetProfile(guid);
+	ASSERT(id > 0);
+	return id;
+}
+
+
+int PlayDataManager::GetProfile(const RString& guid)
+{
+	auto query = Prepare("select Id from Profiles where Guid = ? limit 1;");
+	StatementFinalizer f(query);
+	BindText(query, 0, guid.c_str());
+
+	const auto queryResult = sqlite3_step(query);
+	if (queryResult == SQLITE_DONE)
+		return 0;
+
+	ASSERT(queryResult == SQLITE_ROW);
+	return sqlite3_column_int(query, 0);
+}
+
+void PlayDataManager::CreateProfile(const RString& guid)
+{
+	auto query = Prepare("insert into Profiles(Guid) values(?);");
+	StatementFinalizer f(query);
+
+	BindText(query, 0, guid.c_str());
+	const auto result = sqlite3_step(query);
+	ASSERT(result == SQLITE_DONE);
 }
 
 PlayDataManager::~PlayDataManager()
