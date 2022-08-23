@@ -9,6 +9,7 @@
 #include "LifeMeterBar.h"
 #include "GameState.h"
 #include "ScreenOptionsMasterPrefs.h"
+#include "CryptManager.h"
 
 //you need to manuallly create a sqlite3 visual studio project and add a dependency to a static sqlite3 library in order to compile this code under visual studio
 //pull requests adding sqlite3 to makefile definition are welcomed :)
@@ -27,6 +28,11 @@ void BindInt(sqlite3_stmt* statement, int index, int value)
 	ASSERT(bindResult == SQLITE_OK);
 }
 
+void BindNull(sqlite3_stmt* statement, int index)
+{
+	const auto bindResult = sqlite3_bind_null(statement, index + 1);
+	ASSERT(bindResult == SQLITE_OK);
+}
 
 PlayDataManager* PLAYDATA = NULL;
 const RString PLAY_DATA_DB_FILE = "Save/PlayData.sqlite";
@@ -36,18 +42,21 @@ const char* CreateDb =
 "	Id	INTEGER NOT NULL,"
 "	Guid	TEXT NOT NULL,"
 "	DisplayName	TEXT,"
+"	CreateDateUtc	TEXT NOT NULL,"
 "	LastUsedHighScoreName	TEXT,"
-"	IsAvailable	INTEGER NOT NULL DEFAULT 0,"
+"	LastActivationDateUtc	TEXT NOT NULL,"
 "	PRIMARY KEY(Id AUTOINCREMENT)"
 ");"
 "CREATE TABLE SongsPlayed("
 "	Id	INTEGER,"
-"	ProfileId	INTEGER NOT NULL,"
+"	Guid	TEXT NOT NULL,"
+"	ProfileId	INTEGER NULL,"
 "	PlayerNumber	TEXT NOT NULL,"
+"	PlayMode	TEXT NOT NULL,"
 "	GameType	TEXT NOT NULL,"
 "	GameStyle	TEXT NOT NULL,"
-"	StartDate	TEXT NOT NULL,"
-"	EndDate	TEXT NOT NULL,"
+"	StartDateUtc	TEXT NOT NULL,"
+"	EndDateUtc	TEXT NOT NULL,"
 "	ClearResult	TEXT NOT NULL,"
 "	ChartHash	INTEGER NOT NULL,"
 "	SongInfo	TEXT NOT NULL,"
@@ -80,8 +89,14 @@ StatementFinalizer::~StatementFinalizer()
 	_statement = nullptr;
 }
 
+void sqliteErrorCallback(void* argument, int errorCode, const char* message)
+{
+	LOG->Trace(message);
+}
+
 PlayDataManager::PlayDataManager()
 {
+	sqlite3_config(SQLITE_CONFIG_LOG, sqliteErrorCallback, 0);
 	const auto shouldInit = !FILEMAN->DoesFileExist(PLAY_DATA_DB_FILE);
 	auto dbFile = ResolveDbPath(PLAY_DATA_DB_FILE);
 
@@ -91,7 +106,6 @@ PlayDataManager::PlayDataManager()
 	if (shouldInit)
 		sqlite3_exec(_db, CreateDb, nullptr, nullptr, nullptr);
 
-	sqlite3_exec(_db, "udpate Profiles set IsAvailable=0 where IsAvailable=1;", nullptr, nullptr, nullptr);
 	//keep a maximum of 10k latest rows:
 	sqlite3_exec(_db, "delete from SongsPlayed where Id < (select Id from SongsPlayed order by Id desc limit 1 offset 10000);", nullptr, nullptr, nullptr);
 }
@@ -108,17 +122,49 @@ const char* ClearResultToText(PlayDataClearResult result)
 	}
 }
 
-void PlayDataManager::SaveResult(const RString& guid, const PlayResult& result)
+#define GUID_SIZE_BYTES 8
+
+RString MakeGuid()
 {
-	const auto query = Prepare("insert into SongsPlayed(ProfileId, PlayerNumber, GameType, GameStyle, StartDate, EndDate, ClearResult, ChartHash, SongInfo, ChartInfo, PlayResult, StepStats, DifficultyInfo) values(?,?,?,?,?,?,?,?,?,?,?,?,?);");
+	RString s;
+	s.reserve(GUID_SIZE_BYTES * 2);
+	unsigned char buf[GUID_SIZE_BYTES];
+	CryptManager::GetRandomBytes(buf, GUID_SIZE_BYTES);
+	for (unsigned i = 0; i < GUID_SIZE_BYTES; i++)
+		s += ssprintf("%02x", buf[i]);
+	return s;
+}
+
+const char* ResultInsertStatement =
+"insert into SongsPlayed"
+"("
+"	ProfileId, PlayerNumber, GameType,"
+"	GameStyle, StartDateUtc, EndDateUtc,"
+"	ClearResult, ChartHash, SongInfo,"
+"	ChartInfo, PlayResult, StepStats,"
+"	DifficultyInfo, PlayMode, Guid"
+") values("
+"	?,?,?,"
+"	?,?,?,"
+"	?,?,?,"
+"	?,?,?,"
+"	?,?,?"
+");";
+
+void PlayDataManager::SaveResult(const Profile* profile, const PlayResult& result)
+{
+	const auto query = Prepare(ResultInsertStatement);
 	StatementFinalizer f(query);
 
-	auto profileId = GetOrCreateProfile(guid);
+	auto profileId = profile && profile->m_Type == ProfileType_Normal && !profile->m_sDisplayName.empty() ? GetOrCreateProfile(profile->m_sGuid) : 0;
 
 	RString notesCompressed;
 	NoteDataUtil::GetSMNoteDataString(*result.notes, notesCompressed);
 
-	BindInt(query, 0, profileId);
+	if (profileId > 0)
+		BindInt(query, 0, profileId);
+	else
+		BindNull(query, 0);
 	BindInt(query, 1, result.playerNumber);
 	BindText(query, 2, result.gameType);
 	BindText(query, 3, result.gameStyle);
@@ -147,6 +193,12 @@ void PlayDataManager::SaveResult(const RString& guid, const PlayResult& result)
 	auto difficulty = result.ToDifficultyInfo();
 	BindText(query, 12, difficulty);
 
+	auto playMode = PlayModeToString(result.playMode);
+	BindText(query, 13, playMode);
+
+	const auto guid = MakeGuid();
+	BindText(query, 14, guid);
+
 	const auto sqliteResult = sqlite3_step(query);
 	ASSERT(sqliteResult == SQLITE_DONE);
 }
@@ -163,28 +215,21 @@ const RString PlayDataManager::ResolveDbPath(const RString& path)
 	return fullPath;
 }
 
-void PlayDataManager::DeactivateProfile(const RString& guid)
+void PlayDataManager::ActivateProfile(const Profile* profile)
 {
-	const auto id = GetProfile(guid);
-	if (id < 0)
+	if (profile->m_Type != ProfileType_Normal || profile->m_sDisplayName.empty())
 		return;
-	const auto query = Prepare("update Profiles set IsAvailable=0 where Id = ?;");
-	StatementFinalizer f(query);
-	BindInt(query, 0, id);
-
-	const auto result = sqlite3_step(query);
-	ASSERT(result == SQLITE_DONE);
-}
-
-void PlayDataManager::ActivateProfile(const RString& guid, const RString& displayName, const RString& highScoreName)
-{
-	const auto query = Prepare("update Profiles set IsAvailable=1, DisplayName = ?, LastUsedHighScoreName = ? where Id = ?;");
+	const auto query = Prepare("update Profiles set LastActivationDateUtc=?, DisplayName = ?, LastUsedHighScoreName = ? where Id = ?;");
 	StatementFinalizer f(query);
 
-	const auto id = GetOrCreateProfile(guid);
-	BindText(query, 0, !displayName.empty() ? displayName.c_str() : nullptr);
-	BindText(query, 1, !highScoreName.empty() ? highScoreName.c_str() : nullptr);
-	BindInt(query, 2, id);
+	RString now = DateTime::GetNowDateTimeUtc().GetString();
+	const auto id = GetOrCreateProfile(profile->m_sGuid);
+	const auto displayName = profile->m_sDisplayName;
+	const auto highScoreName = profile->m_sLastUsedHighScoreName;
+	BindText(query, 0, now);
+	BindText(query, 1, !displayName.empty() ? displayName.c_str() : nullptr);
+	BindText(query, 2, !highScoreName.empty() ? highScoreName.c_str() : nullptr);
+	BindInt(query, 3, id);
 
 	const auto result = sqlite3_step(query);
 	ASSERT(result == SQLITE_DONE);
@@ -225,10 +270,13 @@ int PlayDataManager::GetProfile(const RString& guid)
 
 void PlayDataManager::CreateProfile(const RString& guid)
 {
-	auto query = Prepare("insert into Profiles(Guid) values(?);");
+	auto query = Prepare("insert into Profiles(Guid, CreateDateUtc, LastLoginDateUtc) values(?, ?, ?);");
 	StatementFinalizer f(query);
 
+	RString now = DateTime::GetNowDateTimeUtc().GetString();
 	BindText(query, 0, guid.c_str());
+	BindText(query, 1, now);
+	BindText(query, 2, now);
 	const auto result = sqlite3_step(query);
 	ASSERT(result == SQLITE_DONE);
 }
@@ -351,9 +399,16 @@ RString PlayResult::ToStepStats() const
 
 RString PlayResult::ToPlayResult() const
 {
+	RadarValues radar;
+	const auto timing = GAMESTATE->GetProcessedTimingData();
+	GAMESTATE->SetProcessedTimingData(steps->GetTimingData());
+	NoteDataWithScoring::GetActualRadarValues(*notes, *stats, song->m_fMusicLengthSeconds, radar);
+	GAMESTATE->SetProcessedTimingData(timing);
+
 	Json::Value root;
 	root["percentageScore"] = roundFloat(stats->GetPercentDancePoints());
-	root["score"] = stats->m_iActualDancePoints;
+	root["pointsScore"] = stats->m_iActualDancePoints;
+	root["casualScore"] = stats->m_iScore;
 	root["grade"] = (int)stats->GetGrade();
 
 	Json::Value tapScores;
@@ -363,7 +418,7 @@ RString PlayResult::ToPlayResult() const
 	tapScores["W4"] = stats->m_iTapNoteScores[TNS_W4];
 	tapScores["W5"] = stats->m_iTapNoteScores[TNS_W5];
 	tapScores["miss"] = stats->m_iTapNoteScores[TNS_Miss];
-	tapScores["avoidMine"] = stats->m_iTapNoteScores[TNS_AvoidMine];
+	tapScores["avoidMine"] = (int)radar[RadarCategory_Mines]-stats->m_iTapNoteScores[TNS_HitMine];
 	tapScores["hitMine"] = stats->m_iTapNoteScores[TNS_HitMine];
 	tapScores["checkpointHit"] = stats->m_iTapNoteScores[TNS_CheckpointHit];
 	tapScores["checkpointMiss"] = stats->m_iTapNoteScores[TNS_CheckpointMiss];
@@ -374,12 +429,6 @@ RString PlayResult::ToPlayResult() const
 	holdScores["letGo"] = stats->m_iHoldNoteScores[HNS_LetGo];
 	holdScores["missed"] = stats->m_iHoldNoteScores[HNS_Missed];
 	root["holdNoteScores"] = holdScores;
-
-	RadarValues radar;
-	const auto timing = GAMESTATE->GetProcessedTimingData();
-	GAMESTATE->SetProcessedTimingData(steps->GetTimingData());
-	NoteDataWithScoring::GetActualRadarValues(*notes, *stats, song->m_fMusicLengthSeconds, radar);
-	GAMESTATE->SetProcessedTimingData(timing);
 
 	Json::Value stepStats;
 	stepStats["tapsAndHolds"] = (int)radar[RadarCategory_TapsAndHolds];

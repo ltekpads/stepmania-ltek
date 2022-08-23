@@ -2644,6 +2644,7 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 		PlayResult result;
 		result.gameStyle = GAMESTATE->GetCurrentStyle(pn)->m_szName;
 		result.gameType = GAMESTATE->GetCurrentGame()->m_szName;
+		result.playMode = GAMESTATE->m_PlayMode;
 		result.startDate = m_dtStartDate;
 		result.endDate = DateTime::GetNowDateTimeUtc();
 		result.playerNumber = pn;
@@ -2659,7 +2660,7 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 			);
 		result.notes = &pi->m_pPlayer->GetNoteData();
 		result.playerOptions = &pi->GetPlayerState()->m_PlayerOptions;
-		PLAYDATA->SaveResult(PROFILEMAN->GetProfile(pn)->m_sGuid, result);
+		PLAYDATA->SaveResult(PROFILEMAN->GetProfile(pn), result);
 	}
 
 	AdjustSync::HandleSongEnd();

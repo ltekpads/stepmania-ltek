@@ -9,6 +9,7 @@ extern "C" {
 #include "DateTime.h"
 #include "Song.h"
 #include "NoteData.h"
+#include "Profile.h"
 
 enum PlayDataClearResult
 {
@@ -25,6 +26,7 @@ struct PlayResult
 	PlayerNumber playerNumber;
 	const char* gameStyle;
 	const char* gameType;
+	PlayMode playMode;
 	DateTime startDate;
 	DateTime endDate;
 	PlayDataClearResult result;
@@ -47,10 +49,8 @@ public:
 	PlayDataManager();
 	~PlayDataManager();
 
-	void ActivateProfile(const RString& guid, const RString& displayName, const RString& highScoreName);
-	void DeactivateProfile(const RString& guid);
-
-	void SaveResult(const RString& guid, const PlayResult& result);
+	void ActivateProfile(const Profile* profile);
+	void SaveResult(const Profile* profile, const PlayResult& result);
 
 private:
 	sqlite3* _db;

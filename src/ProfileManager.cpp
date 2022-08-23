@@ -189,10 +189,7 @@ ProfileLoadResult ProfileManager::LoadProfile( PlayerNumber pn, RString sProfile
 	}
 
 	if (lr == ProfileLoadResult_Success)
-	{
-		const auto profile = GetProfile(pn);
-		PLAYDATA->ActivateProfile(profile->m_sGuid, profile->m_sDisplayName, profile->m_sLastUsedHighScoreName);
-	}
+		PLAYDATA->ActivateProfile(GetProfile(pn));
 
 	LOG->Trace( "Done loading profile - result %d", lr );
 
@@ -300,8 +297,7 @@ bool ProfileManager::LoadProfileFromMemoryCard( PlayerNumber pn, bool bLoadEdits
 
 void ProfileManager::ActivateProfile(PlayerNumber pn)
 {
-	const auto profile = GetProfile(pn);
-	PLAYDATA->ActivateProfile(profile->m_sGuid, profile->m_sDisplayName, profile->m_sLastUsedHighScoreName);
+	PLAYDATA->ActivateProfile(GetProfile(pn));
 }
 
 bool ProfileManager::LoadFirstAvailableProfile( PlayerNumber pn, bool bLoadEdits )
@@ -376,8 +372,6 @@ bool ProfileManager::SaveLocalProfile( RString sProfileID )
 void ProfileManager::UnloadProfile( PlayerNumber pn )
 {
 	const Profile* existing = GetProfile(pn);
-	if (existing)
-		PLAYDATA->DeactivateProfile(existing->m_sGuid);
 	if( m_sProfileDir[pn].empty() )
 	{
 		// Don't bother unloading a profile that wasn't loaded in the first place.
