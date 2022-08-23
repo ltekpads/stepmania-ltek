@@ -184,9 +184,9 @@ PrefsManager::PrefsManager() :
 	m_sTheme			( "Theme",			SpecialFiles::BASE_THEME_NAME ),
 	m_sDefaultModifiers		( "DefaultModifiers",		"" ),
 
-	m_bWindowed			( "Windowed",			false ),
-	m_iDisplayWidth			( "DisplayWidth",		1920 ),
-	m_iDisplayHeight		( "DisplayHeight",		1080 ),
+	m_bWindowed			( "Windowed",			true ),
+	m_iDisplayWidth			( "DisplayWidth",		1280 ),
+	m_iDisplayHeight		( "DisplayHeight",		720 ),
 	m_fDisplayAspectRatio		( "DisplayAspectRatio",		16/9.f, ValidateDisplayAspectRatio ),
 	m_iDisplayColorDepth		( "DisplayColorDepth",		32 ),
 	m_iTextureColorDepth		( "TextureColorDepth",		32 ),
@@ -301,7 +301,7 @@ PrefsManager::PrefsManager() :
 	m_sDefaultTheme			( "DefaultTheme",			"default" ),
 	m_sLastSeenVideoDriver		( "LastSeenVideoDriver",		"" ),
 	m_sVideoRenderers		( "VideoRenderers",			"" ),	// StepMania.cpp sets these on first run:
-	m_bSmoothLines			( "SmoothLines",			false ),
+	m_bSmoothLines			( "SmoothLines",			true ),
 	m_iSoundWriteAhead		( "SoundWriteAhead",			0 ),
 	m_iSoundDevice			( "SoundDevice",			"" ),
 	m_iSoundPreferredSampleRate	( "SoundPreferredSampleRate",		0 ),
