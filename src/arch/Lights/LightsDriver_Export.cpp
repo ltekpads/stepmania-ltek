@@ -18,6 +18,11 @@ void LightsDriver_Export::Set( const LightsState *ls )
 	m_Lock.Unlock();
 }
 
+LightsDeviceType LightsDriver_Export::GetDeviceType() const
+{
+	return LIGHTSDEVICE_SOFTWARE;
+}
+
 LightsState LightsDriver_Export::GetState()
 {
 	m_Lock.Lock();

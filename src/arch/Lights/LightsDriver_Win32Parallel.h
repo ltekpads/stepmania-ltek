@@ -13,6 +13,7 @@ public:
 	virtual ~LightsDriver_Win32Parallel();
 
 	virtual void Set( const LightsState *ls );
+	virtual LightsDeviceType GetDeviceType() const;
 };
 
 #endif

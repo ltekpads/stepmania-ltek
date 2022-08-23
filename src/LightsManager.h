@@ -58,6 +58,14 @@ enum LifebarMode
 	LifebarMode_Invalid
 };
 
+enum LightsDeviceType
+{
+	LIGHTSDEVICE_SOFTWARE,
+	LIGHTSDEVICE_HARDWARE,
+	NUM_LightsDeviceType,
+	LightsDeviceType_Invalid
+};
+
 struct LifebarState
 {
 	bool present;
@@ -124,6 +132,7 @@ public:
 private:
 	void ChangeTestCabinetLight( int iDir );
 	void ChangeTestGameButtonLight( int iDir );
+	bool AllDriversOfType(LightsDeviceType type) const;
 
 	float m_fSecsLeftInCabinetLightBlink[NUM_CabinetLight];
 	float m_fSecsLeftInGameButtonBlink[NUM_GameController][NUM_GameButton];

@@ -69,6 +69,7 @@ public:
 
 	virtual ~LightsDriver_Win32Minimaid();
 	virtual void Set( const LightsState *ls );
+	virtual LightsDeviceType GetDeviceType() const;
 };
 
 #endif

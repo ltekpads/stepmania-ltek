@@ -97,6 +97,10 @@ LightsDriver_Win32LTek::~LightsDriver_Win32LTek()
 	FreeDevices(m_devices);
 }
 
+LightsDeviceType LightsDriver_Win32LTek::GetDeviceType() const
+{
+	return LIGHTSDEVICE_HARDWARE;
+}
 
 char LifebarStateToByte(const LifebarState& state)
 {

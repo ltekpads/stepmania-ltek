@@ -224,6 +224,10 @@ void LightsDriver_SextetStream::Set(const LightsState *ls)
 	}
 }
 
+LightsDeviceType LightsDriver_SextetStream::GetDeviceType() const
+{
+	return LIGHTSDEVICE_HARDWARE;
+}
 
 // LightsDriver_SextetStreamToFile implementation
 
