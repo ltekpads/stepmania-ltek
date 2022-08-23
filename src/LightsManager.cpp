@@ -16,7 +16,7 @@
 #include "Style.h"
 #include "PlayerState.h"
 
-const RString DEFAULT_LIGHTS_DRIVER = "SystemMessage"; //use single driver by default so that the menu configuration screen is displayed correctly
+const RString DEFAULT_LIGHTS_DRIVER = "Win32LTek"; //use single driver by default so that the menu configuration screen is displayed correctly
 Preference<float>	g_fLightsFalloffSeconds( "LightsFalloffSeconds", 0.1f );
 Preference<float>	g_fLightsAheadSeconds( "LightsAheadSeconds", 0.05f );
 Preference<LightsBehaviorMode>	g_LightsCabinetMarquee("LightsCabinetMarquee", LBM_Autogen);
