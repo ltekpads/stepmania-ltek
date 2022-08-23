@@ -11,6 +11,7 @@ public:
 	virtual ~LightsDriver_SystemMessage();
 
 	virtual void Set( const LightsState *ls );
+	virtual LightsDeviceType GetDeviceType() const;
 };
 
 #endif

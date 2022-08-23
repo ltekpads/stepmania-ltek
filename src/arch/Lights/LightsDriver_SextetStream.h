@@ -23,6 +23,7 @@ public:
 	LightsDriver_SextetStream();
 	virtual ~LightsDriver_SextetStream();
 	virtual void Set(const LightsState *ls);
+	virtual LightsDeviceType GetDeviceType() const;
 protected:
 	void * _impl;
 };

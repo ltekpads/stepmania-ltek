@@ -47,6 +47,11 @@ void setup_driver()
 
 }
 
+LightsDeviceType LightsDriver_Win32Minimaid::GetDeviceType() const
+{
+	return LIGHTSDEVICE_HARDWARE;
+}
+
 LightsDriver_Win32Minimaid::LightsDriver_Win32Minimaid()
 {
 	_mmmagic_loaded=false;

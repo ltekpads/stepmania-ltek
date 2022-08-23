@@ -14,6 +14,11 @@ LightsDriver_SystemMessage::~LightsDriver_SystemMessage()
 {
 }
 
+LightsDeviceType LightsDriver_SystemMessage::GetDeviceType() const
+{
+	return LIGHTSDEVICE_SOFTWARE;
+}
+
 void LightsDriver_SystemMessage::Set( const LightsState *ls )
 {
 	if( !PREFSMAN->m_bDebugLights )

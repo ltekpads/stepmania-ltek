@@ -34,6 +34,7 @@ public:
 	virtual ~LightsDriver() {};
 
 	virtual void Set( const LightsState *ls ) = 0;
+	virtual LightsDeviceType GetDeviceType() const = 0;
 	virtual void DevicesChanged() {}
 };
 

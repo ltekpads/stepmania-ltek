@@ -159,8 +159,24 @@ void LightsManager::Reload()
 	LightsDriver::Create(sDriver, m_vpDrivers);
 }
 
+bool LightsManager::AllDriversOfType(LightsDeviceType type) const
+{
+	for (int a = 0; a < m_vpDrivers.size(); a++)
+		if (m_vpDrivers[a]->GetDeviceType() != type)
+			return false;
+	return true;
+}
+
 void LightsManager::DevicesChanged()
 {
+	RString sDriver = PREFSMAN->m_sLightsDriver.Get();
+	if (sDriver.empty()) //no driver was manually configured by the user
+	{
+		//no driver in use or only a dummy one
+		if (m_vpDrivers.size() == 0 || AllDriversOfType(LIGHTSDEVICE_SOFTWARE))
+			Reload();
+	}
+
 	FOREACH(LightsDriver*, m_vpDrivers, iter)
 		(*iter)->DevicesChanged();
 }

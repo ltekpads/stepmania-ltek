@@ -60,6 +60,11 @@ LightsDriver_Win32Parallel::~LightsDriver_Win32Parallel()
 	FreeLibrary( hDLL );
 }
 
+LightsDeviceType LightsDriver_Win32Parallel::GetDeviceType() const
+{
+	return LIGHTSDEVICE_HARDWARE;
+}
+
 void LightsDriver_Win32Parallel::Set( const LightsState *ls )
 {
 	BYTE data[MAX_PARALLEL_PORTS] =
