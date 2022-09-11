@@ -270,7 +270,7 @@ int PlayDataManager::GetProfile(const RString& guid)
 
 void PlayDataManager::CreateProfile(const RString& guid)
 {
-	auto query = Prepare("insert into Profiles(Guid, CreateDateUtc, LastLoginDateUtc) values(?, ?, ?);");
+	auto query = Prepare("insert into Profiles(Guid, CreateDateUtc, LastActivationDateUtc) values(?, ?, ?);");
 	StatementFinalizer f(query);
 
 	RString now = DateTime::GetNowDateTimeUtc().GetString();
