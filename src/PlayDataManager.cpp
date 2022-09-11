@@ -399,11 +399,7 @@ RString PlayResult::ToStepStats() const
 
 RString PlayResult::ToPlayResult() const
 {
-	RadarValues radar;
-	const auto timing = GAMESTATE->GetProcessedTimingData();
-	GAMESTATE->SetProcessedTimingData(steps->GetTimingData());
-	NoteDataWithScoring::GetActualRadarValues(*notes, *stats, song->m_fMusicLengthSeconds, radar);
-	GAMESTATE->SetProcessedTimingData(timing);
+	const RadarValues& radar = steps->GetRadarValues(playerNumber);
 
 	Json::Value root;
 	root["percentageScore"] = roundFloat(stats->GetPercentDancePoints());
