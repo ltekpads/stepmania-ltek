@@ -2684,7 +2684,6 @@ void ScreenGameplay::StageFinished( bool bBackedOut )
 			SetupSong( i );
 			FOREACH_EnabledPlayerInfo( m_vPlayerInfo, pi )
 				pi->m_pPlayer->ApplyWaitingTransforms();
-			SongFinished(bBackedOut);
 		}
 	}
 
