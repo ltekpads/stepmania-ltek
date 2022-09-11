@@ -86,11 +86,6 @@ RString RageDisplay::SetVideoMode( VideoModeParams p, bool &bNeedReloadTextures 
 	if ((err = this->TryVideoMode(p, bNeedReloadTextures)) == "")
 		return RString();
 	vs.push_back(err);
-	
-	p.bpp = 16;
-	if( (err = this->TryVideoMode(p,bNeedReloadTextures)) == "" )
-		return RString();
-	vs.push_back( err );
 
 	// "Intel(R) 82810E Graphics Controller" won't accept a 16 bpp surface if 
 	// the desktop is 32 bpp, so try 32 bpp as well.
