@@ -2664,6 +2664,7 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 		result.playerOptions = &pi->GetPlayerState()->m_PlayerOptions;
 		PLAYDATA->SaveResult(PROFILEMAN->GetProfile(pn), result);
 	}
+	PLAYDATA->EndSong(GAMESTATE->m_pCurSong);
 
 	AdjustSync::HandleSongEnd();
 	SaveStats(); // Let subclasses save the stats.
@@ -2740,6 +2741,7 @@ void ScreenGameplay::HandleScreenMessage( const ScreenMessage SM )
 	}
 	else if( SM == SM_PlayGo )
 	{
+		PLAYDATA->StartSong(GAMESTATE->m_pCurSong);
 		m_Go.StartTransitioning( SM_None );
 		bool should_play_go= true;
 		if(m_delaying_ready_announce)

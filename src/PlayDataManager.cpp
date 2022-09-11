@@ -11,6 +11,12 @@
 #include "ScreenOptionsMasterPrefs.h"
 #include "CryptManager.h"
 
+static const char* PlayDataEventNames[] = {
+	"SongStart",
+	"SongEnd",
+};
+XToString(PlayDataEvent);
+
 //you need to manuallly create a sqlite3 visual studio project and add a dependency to a static sqlite3 library in order to compile this code under visual studio
 //pull requests adding sqlite3 to makefile definition are welcomed :)
 
@@ -45,6 +51,13 @@ const char* CreateDb =
 "	CreateDateUtc	TEXT NOT NULL,"
 "	LastUsedHighScoreName	TEXT,"
 "	LastActivationDateUtc	TEXT NOT NULL,"
+"	PRIMARY KEY(Id AUTOINCREMENT)"
+");"
+"CREATE TABLE GameEvents ("
+"	Id	INTEGER NOT NULL,"
+"	EventDateUtc	TEXT NOT NULL,"
+"	EventType	TEXT NOT NULL,"
+"	Details	TEXT NULL,"
 "	PRIMARY KEY(Id AUTOINCREMENT)"
 ");"
 "CREATE TABLE SongsPlayed("
@@ -293,7 +306,7 @@ RString WriteJson(Json::Value& root)
 	return writer.write(root);
 }
 
-RString PlayResult::ToSongInfo() const
+RString SerializeSongInfo(const Song* song)
 {
 	Json::Value root;
 
@@ -308,6 +321,11 @@ RString PlayResult::ToSongInfo() const
 	root["origin"] = song->m_sOrigin;
 
 	return WriteJson(root);
+}
+
+RString PlayResult::ToSongInfo() const
+{
+	return SerializeSongInfo(song);
 }
 
 RString PlayResult::ToChartInfo() const
@@ -446,6 +464,33 @@ RString PlayResult::ToPlayResult() const
 	root["disqualified"] = stats->IsDisqualified();
 
 	return WriteJson(root);
+}
+
+void PlayDataManager::StartSong(const Song* song)
+{
+	auto info = SerializeSongInfo(song);
+	SaveEvent(PlayEvent_SongStart, info);
+}
+
+void PlayDataManager::EndSong(const Song* song)
+{
+	auto info = SerializeSongInfo(song);
+	SaveEvent(PlayEvent_SongEnd, info);
+}
+
+void PlayDataManager::SaveEvent(const PlayDataEvent playEvent, const RString& details)
+{
+	auto query = Prepare("insert into GameEvents(EventDateUtc, EventType, Details) values(?, ?, ?);");
+	StatementFinalizer f(query);
+
+	RString now = DateTime::GetNowDateTimeUtc().GetString();
+	BindText(query, 0, now);
+
+	const auto eventName = PlayDataEventToString(playEvent);
+	BindText(query, 1, eventName);
+	BindText(query, 2, details);
+	const auto result = sqlite3_step(query);
+	ASSERT(result == SQLITE_DONE);
 }
 
 /*

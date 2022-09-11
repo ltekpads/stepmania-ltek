@@ -21,6 +21,17 @@ enum PlayDataClearResult
 	PlayDataClearResult_Invalid,
 };
 
+enum PlayDataEvent
+{
+	PlayEvent_SongStart,
+	PlayEvent_SongEnd,
+	NUM_PlayDataEvent,
+	PlayDataEvent_Invalid,
+};
+
+const RString& PlayDataEventToString(PlayDataEvent playEvent);
+
+
 struct PlayResult
 {
 	PlayerNumber playerNumber;
@@ -51,6 +62,8 @@ public:
 
 	void ActivateProfile(const Profile* profile);
 	void SaveResult(const Profile* profile, const PlayResult& result);
+	void StartSong(const Song* song);
+	void EndSong(const Song* song);
 
 private:
 	sqlite3* _db;
@@ -59,6 +72,7 @@ private:
 	int GetProfile(const RString& guid);
 	void CreateProfile(const RString& guid);
 	int GetOrCreateProfile(const RString& guid);
+	void SaveEvent(const PlayDataEvent playEvent, const RString& details);
 
 	sqlite3_stmt* Prepare(const char* query);
 };
