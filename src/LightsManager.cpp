@@ -134,7 +134,11 @@ LightsManager::LightsManager()
 	m_LightsMode = LIGHTSMODE_JOINING;
 	RString sDriver = PREFSMAN->m_sLightsDriver.Get();
 	if (sDriver.empty())
+	{
 		sDriver = FindDefaultDriver();
+		if (sDriver.length() > 0)
+			PREFSMAN->m_sLightsDriver.Set(sDriver);
+	}
 	LightsDriver::Create( sDriver, m_vpDrivers );
 
 	SetLightsMode( LIGHTSMODE_ATTRACT );
@@ -155,7 +159,11 @@ void LightsManager::Reload()
 
 	RString sDriver = PREFSMAN->m_sLightsDriver.Get();
 	if (sDriver.empty())
+	{
 		sDriver = FindDefaultDriver();
+		if (sDriver.length() > 0)
+			PREFSMAN->m_sLightsDriver.Set(sDriver);
+	}
 	LightsDriver::Create(sDriver, m_vpDrivers);
 }
 
