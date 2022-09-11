@@ -324,9 +324,9 @@ RString PlayResult::ToChartInfo() const
 	return WriteJson(root);
 }
 
-float roundFloat(float value)
+double roundFloat(float value)
 {
-	return roundf(value * 10000)/10000;
+	return ((int)roundf(value * 10000))/10000.0;
 }
 
 RString PlayResult::ToDifficultyInfo() const
