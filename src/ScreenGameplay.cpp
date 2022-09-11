@@ -2641,6 +2641,8 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 	FOREACH_EnabledPlayerInfo(m_vPlayerInfo, pi)
 	{
 		const auto pn = pi->m_pn;
+		if (!GAMESTATE->IsHumanPlayer(pn))
+			continue;
 		PlayResult result;
 		result.gameStyle = GAMESTATE->GetCurrentStyle(pn)->m_szName;
 		result.gameType = GAMESTATE->GetCurrentGame()->m_szName;
