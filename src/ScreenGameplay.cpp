@@ -1463,6 +1463,7 @@ void ScreenGameplay::StartPlayingSong( float fMinTimeToNotes, float fMinTimeToMu
 
 	m_pSoundMusic->SetProperty( "AccurateSync", true );
 	m_dtStartDate = DateTime::GetNowDateTimeUtc();
+	PLAYDATA->StartSong(GAMESTATE->m_pCurSong);
 
 	RageSoundParams p;
 	p.m_fSpeed = GAMESTATE->m_SongOptions.GetCurrent().m_fMusicRate;
@@ -2741,7 +2742,6 @@ void ScreenGameplay::HandleScreenMessage( const ScreenMessage SM )
 	}
 	else if( SM == SM_PlayGo )
 	{
-		PLAYDATA->StartSong(GAMESTATE->m_pCurSong);
 		m_Go.StartTransitioning( SM_None );
 		bool should_play_go= true;
 		if(m_delaying_ready_announce)
