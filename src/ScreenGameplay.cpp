@@ -2638,6 +2638,7 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 	}
 
 	const auto songFinished = GAMESTATE->m_Position.m_fMusicSeconds >= GAMESTATE->m_pCurSong->GetLastSecond();
+	DateTime now = DateTime::GetNowDateTimeUtc();
 
 	FOREACH_EnabledPlayerInfo(m_vPlayerInfo, pi)
 	{
@@ -2649,7 +2650,7 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 		result.gameType = GAMESTATE->GetCurrentGame()->m_szName;
 		result.playMode = GAMESTATE->m_PlayMode;
 		result.startDate = m_dtStartDate;
-		result.endDate = DateTime::GetNowDateTimeUtc();
+		result.endDate = now;
 		result.playerNumber = pn;
 		result.steps = GAMESTATE->m_pCurSteps[pn];
 		result.song = GAMESTATE->m_pCurSong;
