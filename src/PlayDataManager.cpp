@@ -121,7 +121,7 @@ PlayDataManager::PlayDataManager()
 
 	//keep a maximum of 10k latest rows:
 	sqlite3_exec(_db, "delete from SongsPlayed where Id < (select Id from SongsPlayed order by Id desc limit 1 offset 10000);", nullptr, nullptr, nullptr);
-	sqlite3_exec(_db, "delete from GameEvents where Id < (select Id from SongsPlayed order by Id desc limit 1 offset 10000);", nullptr, nullptr, nullptr);
+	sqlite3_exec(_db, "delete from GameEvents where Id < (select Id from GameEvents order by Id desc limit 1 offset 10000);", nullptr, nullptr, nullptr);
 }
 
 const char* ClearResultToText(PlayDataClearResult result)
