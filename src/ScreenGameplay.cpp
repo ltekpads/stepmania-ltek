@@ -2639,6 +2639,7 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 
 	const auto songFinished = GAMESTATE->m_Position.m_fMusicSeconds >= GAMESTATE->m_pCurSong->GetLastSecond();
 	DateTime now = DateTime::GetNowDateTimeUtc();
+	PLAYDATA->EndSong(GAMESTATE->m_pCurSong);
 
 	FOREACH_EnabledPlayerInfo(m_vPlayerInfo, pi)
 	{
@@ -2666,7 +2667,6 @@ void ScreenGameplay::SongFinished(bool bBackedOut)
 		result.playerOptions = &pi->GetPlayerState()->m_PlayerOptions;
 		PLAYDATA->SaveResult(PROFILEMAN->GetProfile(pn), result);
 	}
-	PLAYDATA->EndSong(GAMESTATE->m_pCurSong);
 
 	AdjustSync::HandleSongEnd();
 	SaveStats(); // Let subclasses save the stats.
