@@ -211,12 +211,12 @@ void GameState::SetMasterPlayerNumber(const PlayerNumber p)
 	this->masterPlayerNumber = p;
 }
 
-TimingData * GameState::GetProcessedTimingData() const
+const TimingData * GameState::GetProcessedTimingData() const
 {
 	return this->processedTiming;
 }
 
-void GameState::SetProcessedTimingData(TimingData * t)
+void GameState::SetProcessedTimingData(const TimingData * t)
 {
 	this->processedTiming = t;
 }

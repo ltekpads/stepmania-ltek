@@ -126,6 +126,8 @@ struct DateTime
 	 * @brief Retrieve the current date and time.
 	 * @return the current date and time. */
 	static DateTime GetNowDateTime();
+
+	static DateTime GetNowDateTimeUtc();
 	/**
 	 * @brief Retrieve the current date.
 	 * @return the current date. */

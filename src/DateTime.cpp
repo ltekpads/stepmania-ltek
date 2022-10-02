@@ -73,6 +73,23 @@ DateTime DateTime::GetNowDateTime()
 	return dtNow;
 }
 
+DateTime DateTime::GetNowDateTimeUtc()
+{
+	time_t now = time(NULL);
+	tm tNow;
+	gmtime_r( &now, &tNow );
+	DateTime dtNow;
+#define COPY_M( v ) dtNow.v = tNow.v;
+	COPY_M( tm_year );
+	COPY_M( tm_mon );
+	COPY_M( tm_mday );
+	COPY_M( tm_hour );
+	COPY_M( tm_min );
+	COPY_M( tm_sec );
+#undef COPY_M
+	return dtNow;
+}
+
 DateTime DateTime::GetNowDate()
 {
 	DateTime tNow = GetNowDateTime();

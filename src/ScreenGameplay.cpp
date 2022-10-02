@@ -61,6 +61,7 @@
 #include "Song.h"
 #include "XmlFileUtil.h"
 #include "Profile.h" // for replay data stuff
+#include "PlayDataManager.h"
 
 // Defines
 #define SHOW_LIFE_METER_FOR_DISABLED_PLAYERS	THEME->GetMetricB(m_sName,"ShowLifeMeterForDisabledPlayers")
@@ -1463,6 +1464,8 @@ void ScreenGameplay::StartPlayingSong( float fMinTimeToNotes, float fMinTimeToMu
 	ASSERT( fMinTimeToMusic >= 0 );
 
 	m_pSoundMusic->SetProperty( "AccurateSync", true );
+	m_dtStartDate = DateTime::GetNowDateTimeUtc();
+	PLAYDATA->StartSong(GAMESTATE->m_pCurSong);
 
 	RageSoundParams p;
 	p.m_fSpeed = GAMESTATE->m_SongOptions.GetCurrent().m_fMusicRate;
@@ -2626,7 +2629,7 @@ void ScreenGameplay::SaveStats()
 	}
 }
 
-void ScreenGameplay::SongFinished()
+void ScreenGameplay::SongFinished(bool bBackedOut)
 {
 	FOREACH_EnabledPlayer(pn)
 	{
@@ -2635,6 +2638,38 @@ void ScreenGameplay::SongFinished()
 			GAMESTATE->m_pCurSteps[pn]->GetTimingData()->ReleaseLookup();
 		}
 	}
+
+	const auto songFinished = GAMESTATE->m_Position.m_fMusicSeconds >= GAMESTATE->m_pCurSong->GetLastSecond();
+	DateTime now = DateTime::GetNowDateTimeUtc();
+	PLAYDATA->EndSong(GAMESTATE->m_pCurSong);
+
+	FOREACH_EnabledPlayerInfo(m_vPlayerInfo, pi)
+	{
+		const auto pn = pi->m_pn;
+		if (!GAMESTATE->IsHumanPlayer(pn))
+			continue;
+		PlayResult result;
+		result.gameStyle = GAMESTATE->GetCurrentStyle(pn)->m_szName;
+		result.gameType = GAMESTATE->GetCurrentGame()->m_szName;
+		result.playMode = GAMESTATE->m_PlayMode;
+		result.startDate = m_dtStartDate;
+		result.endDate = now;
+		result.playerNumber = pn;
+		result.steps = GAMESTATE->m_pCurSteps[pn];
+		result.song = GAMESTATE->m_pCurSong;
+		const auto stats = pi->GetPlayerStageStats();
+		result.stats = stats;
+		result.result = bBackedOut
+			? ClearResult_Exited
+			: (!stats->m_bFailed
+				? ClearResult_Cleared
+				: (songFinished ? ClearResult_FailedEndOfSong : ClearResult_FailedImmediate)
+			);
+		result.notes = &pi->m_pPlayer->GetNoteData();
+		result.playerOptions = &pi->GetPlayerState()->m_PlayerOptions;
+		PLAYDATA->SaveResult(PROFILEMAN->GetProfile(pn), result);
+	}
+
 	AdjustSync::HandleSongEnd();
 	SaveStats(); // Let subclasses save the stats.
 	/* Extremely important: if we don't remove attacks before moving on to the next
@@ -2656,7 +2691,6 @@ void ScreenGameplay::StageFinished( bool bBackedOut )
 			SetupSong( i );
 			FOREACH_EnabledPlayerInfo( m_vPlayerInfo, pi )
 				pi->m_pPlayer->ApplyWaitingTransforms();
-			SongFinished();
 		}
 	}
 
@@ -2946,7 +2980,7 @@ void ScreenGameplay::HandleScreenMessage( const ScreenMessage SM )
 	else if( SM == SM_LoadNextSong )
 	{
 		m_pSoundMusic->Stop();
-		SongFinished();
+		SongFinished(false);
 
 		MESSAGEMAN->Broadcast( "ChangeCourseSongOut" );
 
@@ -3001,7 +3035,7 @@ void ScreenGameplay::HandleScreenMessage( const ScreenMessage SM )
 	}
 	else if( SM == SM_DoPrevScreen )
 	{
-		SongFinished();
+		SongFinished(true);
 		this->StageFinished( true );
 
 		m_sNextScreen = GetPrevScreen();
@@ -3013,7 +3047,7 @@ void ScreenGameplay::HandleScreenMessage( const ScreenMessage SM )
 	}
 	else if( SM == SM_DoNextScreen )
 	{
-		SongFinished();
+		SongFinished(false);
 		this->StageFinished( false );
 		// only save replays if the player chose to
 		if( GAMESTATE->m_SongOptions.GetCurrent().m_bSaveReplay )

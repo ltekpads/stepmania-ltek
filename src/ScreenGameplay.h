@@ -230,7 +230,7 @@ protected:
 	void PlayTicks();
 	void UpdateSongPosition( float fDeltaTime );
 	void UpdateLyrics( float fDeltaTime );
-	void SongFinished();
+	void SongFinished( bool bBackedOut);
 	virtual void SaveStats();
 	virtual void StageFinished( bool bBackedOut );
 	void SaveReplay();
@@ -339,6 +339,8 @@ protected:
 	// Apparently we just hope the server is keeping track.
 	// All we can do is guess based on what subclass we are.
 	bool m_bForceNoNetwork;
+
+	DateTime m_dtStartDate;
 };
 
 vector<PlayerInfo>::iterator GetNextEnabledPlayerInfo		( vector<PlayerInfo>::iterator iter, vector<PlayerInfo> &v );

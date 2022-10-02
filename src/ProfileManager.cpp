@@ -6,6 +6,7 @@
 #include "RageLog.h"
 #include "RageFile.h"
 #include "RageFileManager.h"
+#include "PlayDataManager.h"
 #include "GameConstantsAndTypes.h"
 #include "SongManager.h"
 #include "GameState.h"
@@ -187,6 +188,9 @@ ProfileLoadResult ProfileManager::LoadProfile( PlayerNumber pn, RString sProfile
 		}
 	}
 
+	if (lr == ProfileLoadResult_Success)
+		PLAYDATA->ActivateProfile(GetProfile(pn));
+
 	LOG->Trace( "Done loading profile - result %d", lr );
 
 	return lr;
@@ -212,7 +216,7 @@ bool ProfileManager::LoadLocalProfileFromMachine( PlayerNumber pn )
 	}
 
 	GetProfile(pn)->LoadCustomFunction( m_sProfileDir[pn] );
-	
+	ActivateProfile(pn);
 	return true;
 }
 
@@ -287,7 +291,13 @@ bool ProfileManager::LoadProfileFromMemoryCard( PlayerNumber pn, bool bLoadEdits
 		}
 	}
 
+	ActivateProfile(pn);
 	return true; // If a card is inserted, we want to use the memory card to save - even if the Profile load failed.
+}
+
+void ProfileManager::ActivateProfile(PlayerNumber pn)
+{
+	PLAYDATA->ActivateProfile(GetProfile(pn));
 }
 
 bool ProfileManager::LoadFirstAvailableProfile( PlayerNumber pn, bool bLoadEdits )
@@ -361,6 +371,7 @@ bool ProfileManager::SaveLocalProfile( RString sProfileID )
 
 void ProfileManager::UnloadProfile( PlayerNumber pn )
 {
+	const Profile* existing = GetProfile(pn);
 	if( m_sProfileDir[pn].empty() )
 	{
 		// Don't bother unloading a profile that wasn't loaded in the first place.

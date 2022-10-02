@@ -32,6 +32,11 @@ public:
 
 	void UpdateNonstopLifebar();
 	void FillForHowToPlay(int NumT2s, int NumMisses);
+	float GetLifePercentChange( ScoreEvent scoreEvent ) const;
+	float GetLifeInitialValue() const;
+	bool GetForceLifeDifficultyOnExtraStage() const;
+	float GetExtraStageLifeDifficulty() const;
+	TapNoteScore GetMinStayAlive() const;
 	// this function is solely for HowToPlay
 
 private:

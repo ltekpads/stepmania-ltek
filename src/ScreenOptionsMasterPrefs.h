@@ -77,6 +77,9 @@ struct ConfOption
 	void (*MakeOptionsListCB)( vector<RString> &out );
 };
 
+int GetLifeDifficulty();
+int GetTimingDifficulty();
+
 #endif
 
 /**

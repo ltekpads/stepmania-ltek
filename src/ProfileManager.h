@@ -113,6 +113,7 @@ public:
 
 private:
 	ProfileLoadResult LoadProfile( PlayerNumber pn, RString sProfileDir, bool bIsMemCard );
+	void ActivateProfile( PlayerNumber pn );
 
 	// Directory that contains the profile.  Either on local machine or
 	// on a memory card.

@@ -411,6 +411,31 @@ void LifeMeterBar::FillForHowToPlay( int NumW2s, int NumMisses )
 	AfterLifeChanged();
 }
 
+float LifeMeterBar::GetLifePercentChange(ScoreEvent scoreEvent) const
+{
+	return m_fLifePercentChange.GetValue(scoreEvent);
+}
+
+float LifeMeterBar::GetLifeInitialValue() const
+{
+	return INITIAL_VALUE;
+}
+
+bool LifeMeterBar::GetForceLifeDifficultyOnExtraStage() const
+{
+	return FORCE_LIFE_DIFFICULTY_ON_EXTRA_STAGE;
+}
+
+float LifeMeterBar::GetExtraStageLifeDifficulty() const
+{
+	return EXTRA_STAGE_LIFE_DIFFICULTY;
+}
+
+TapNoteScore LifeMeterBar::GetMinStayAlive() const
+{
+	return MIN_STAY_ALIVE;
+}
+
 /*
  * (c) 2001-2004 Chris Danford
  * All rights reserved.
