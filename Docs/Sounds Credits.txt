@@ -1,24 +1,7 @@
-﻿== L-TEK Sp. z o.o. ==
-== maty-taneczne.pl ==
+﻿"Game Start" by plasterbrain
+CC0 license
+https://freesound.org/people/plasterbrain/sounds/243020/
 
-CEO
-Katarzyna Krupnik
-
-CTO
-Tomasz Tadeusz Krupnik (tekatom)
-
-Solution Architect
-Piotr Maciążek (Chmurek)
-
-Firmware Developer
-Piotr Chmiel (Black Dragon)
-
-Project Manager
-Magdalena Wąsik
-
-Junior Project Manager
-Adrianna Krupnik
-Jakub Warzecha
-
-IT Specialist
-Marek Gaworczyk
+"sf3-sfx-menu-select.wav" by broumbroum
+CC BY 3.0 license
+https://freesound.org/people/broumbroum/sounds/50561/

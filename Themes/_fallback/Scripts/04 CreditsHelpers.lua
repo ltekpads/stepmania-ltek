@@ -71,7 +71,10 @@ local stepmania_credits= {
 		"Jakub Warzecha",
 		"",
 		"IT Specialist",
-		"Marek Gaworczyk",		
+		"Marek Gaworczyk",
+		"",
+		"Content Designer",
+		"Miłosz Różycki (Axor)",		
 	},
 	{
 		name= "Sounds",
