@@ -17,4 +17,4 @@ endif()
 include(CMakeProject-tomcrypt.cmake)
 include(CMakeProject-tommath.cmake)
 include(CMakeProject-png.cmake)
-
+include(CMakeProject-sqlite.cmake)
