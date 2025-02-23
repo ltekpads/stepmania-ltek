@@ -4,7 +4,20 @@
 #include "RageUtil.h"
 
 struct VidPid { int vid; int pid; };
-const VidPid DeviceIds[]{ {0x03EB,0x8004}, {0x03EB,0x800A}, {0x03EB,0x800B} };
+const VidPid DeviceIds[]{
+	// Legacy VID/PID
+	{0x03EB, 0x8041}, // L-TEK Dance Pad PRO
+	{0x0483, 0x5752}, // L-TEK Dance Pad Zero
+	{0x03EB, 0x8004}, // L-TEK Dance Base MINI
+	{0x03EB, 0x800A}, // L-TEK Lights
+	{0x03EB, 0x800B}, // L-TEK Lights DMX
+	// Modern VID/PID
+	{0x37F0, 0x1001}, // L-TEK Dance Pad PRO
+	{0x37F0, 0x1002}, // L-TEK Dance Pad Zero
+	{0x37F0, 0x3000}, // L-TEK Dance Base MINI
+	{0x37F0, 0x6000}, // L-TEK Lights
+	{0x37F0, 0x6001}  // L-TEK Lights DMX
+};
 
 REGISTER_LIGHTS_DRIVER_CLASS(Win32LTek, "L-TEK");
 const int ReportTypeSetLights = 10;

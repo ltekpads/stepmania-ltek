@@ -192,28 +192,6 @@ static const AutoMappings g_AutoMappings[] =
 		AutoMappingEntry( 0, JOY_BUTTON_10,     GAME_BUTTON_BACK,       false ),
 		AutoMappingEntry( 0, JOY_BUTTON_9,      GAME_BUTTON_START,      false )
 	   ),
-/*	AutoMappings(
-
-		"dance",
-		"MP-8866 Dual USB Joypad",
-		"Super Dual Box (from Lik-Sang, 2004)",
-		//NEEDS_DANCE_PAD_MAPPING_CODE,
-		AutoMappingEntry( 0, JOY_LEFT,	       DANCE_BUTTON_LEFT,      false ),
-		AutoMappingEntry( 0, JOY_RIGHT,	       DANCE_BUTTON_RIGHT,     false ),
-		AutoMappingEntry( 0, JOY_UP,	       DANCE_BUTTON_UP,	       false ),
-		AutoMappingEntry( 0, JOY_DOWN,	       DANCE_BUTTON_DOWN,      false ),
-		AutoMappingEntry( 1, JOY_BUTTON_4,      DANCE_BUTTON_LEFT,      false ),
-		AutoMappingEntry( 1, JOY_BUTTON_2,      DANCE_BUTTON_RIGHT,     false ),
-		AutoMappingEntry( 1, JOY_BUTTON_1,      DANCE_BUTTON_UP,	       false ),
-		AutoMappingEntry( 1, JOY_BUTTON_3,      DANCE_BUTTON_DOWN,      false ),
-		AutoMappingEntry( 0, JOY_BUTTON_5,      DANCE_BUTTON_UPLEFT,    false ),
-		AutoMappingEntry( 0, JOY_BUTTON_6,      DANCE_BUTTON_UPRIGHT,   false ),
-		AutoMappingEntry( 1, JOY_BUTTON_7,      DANCE_BUTTON_UPLEFT,    false ),
-		AutoMappingEntry( 1, JOY_BUTTON_8,      DANCE_BUTTON_UPRIGHT,   false ),
-		AutoMappingEntry( 0, JOY_BUTTON_10,     GAME_BUTTON_BACK,       false ),
-		AutoMappingEntry( 0, JOY_BUTTON_9,      GAME_BUTTON_START,      false ),
-	   ),
-*/
 	   AutoMappings(
 		"dance",
 		"MP-8866 Dual USB Joypad",
@@ -331,12 +309,12 @@ static const AutoMappings g_AutoMappings[] =
 		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_DOWN, false),
 		AutoMappingEntry(0, JOY_BUTTON_5, GAME_BUTTON_START, false),
 		AutoMappingEntry(0, JOY_BUTTON_6, GAME_BUTTON_BACK, false),
-		AutoMappingEntry( 0, JOY_BUTTON_7,     DANCE_BUTTON_LEFT,	       true ),
-		AutoMappingEntry( 0, JOY_BUTTON_8,     DANCE_BUTTON_RIGHT,      true ),
-		AutoMappingEntry( 0, JOY_BUTTON_9,     DANCE_BUTTON_UP,      true ),
-		AutoMappingEntry( 0, JOY_BUTTON_10,     DANCE_BUTTON_DOWN,     true ),
-		AutoMappingEntry( 0, JOY_BUTTON_11,      GAME_BUTTON_START,       true ),
-		AutoMappingEntry( 0, JOY_BUTTON_12,     GAME_BUTTON_BACK,      true )
+		AutoMappingEntry(0, JOY_BUTTON_7, DANCE_BUTTON_LEFT, true),
+		AutoMappingEntry(0, JOY_BUTTON_8, DANCE_BUTTON_RIGHT, true),
+		AutoMappingEntry(0, JOY_BUTTON_9, DANCE_BUTTON_UP, true),
+		AutoMappingEntry(0, JOY_BUTTON_10, DANCE_BUTTON_DOWN, true),
+		AutoMappingEntry(0, JOY_BUTTON_11, GAME_BUTTON_START, true),
+		AutoMappingEntry(0, JOY_BUTTON_12, GAME_BUTTON_BACK, true)
 	   ),
 	   AutoMappings(
 		"dance",
@@ -362,16 +340,35 @@ static const AutoMappings g_AutoMappings[] =
 	   ),
 	   AutoMappings(
 		"dance",
-		"Dance ", //Notice extra space at end
-		"LevelSix USB Pad (DDR638)",	// "DDR638" is the model number of the pad
-		AutoMappingEntry( 0, JOY_BUTTON_1,      DANCE_BUTTON_UP,	       false ),
-		AutoMappingEntry( 0, JOY_BUTTON_2,      DANCE_BUTTON_DOWN,      false ),
-		AutoMappingEntry( 0, JOY_BUTTON_3,      DANCE_BUTTON_LEFT,      false ),
-		AutoMappingEntry( 0, JOY_BUTTON_4,      DANCE_BUTTON_RIGHT,     false ),
-		AutoMappingEntry( 0, JOY_BUTTON_7,      DANCE_BUTTON_UPRIGHT,   false ),
-		AutoMappingEntry( 0, JOY_BUTTON_8,      DANCE_BUTTON_UPLEFT,    false ),
-		AutoMappingEntry( 0, JOY_BUTTON_9,      GAME_BUTTON_BACK,       false ),
-		AutoMappingEntry( 0, JOY_BUTTON_10,     GAME_BUTTON_START,      false )
+		"L-TEK Dance Pad Zero",
+		"L-TEK usb dance pad",
+		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_LEFT, false),
+		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_RIGHT, false),
+		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_UP, false),
+		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_DOWN, false),
+		AutoMappingEntry(0, JOY_BUTTON_11, GAME_BUTTON_START, false),
+		AutoMappingEntry(0, JOY_BUTTON_12, GAME_BUTTON_BACK, false)
+	   ),
+	   AutoMappings(
+		"pump",
+		"L-TEK Dance Pad PIU",
+		"L-TEK generic dance pad",
+		AutoMappingEntry(0, JOY_BUTTON_1, PUMP_BUTTON_UPLEFT, false),
+		AutoMappingEntry(0, JOY_BUTTON_2, PUMP_BUTTON_UPRIGHT, false),
+		AutoMappingEntry(0, JOY_BUTTON_3, PUMP_BUTTON_DOWNLEFT, false),
+		AutoMappingEntry(0, JOY_BUTTON_4, PUMP_BUTTON_DOWNRIGHT, false),
+		AutoMappingEntry(0, JOY_BUTTON_5, PUMP_BUTTON_CENTER, false)
+	   ),
+	   AutoMappings(
+		"dance",
+		"L-TEK",
+		"L-TEK generic dance pad",
+		AutoMappingEntry(0, JOY_BUTTON_1, DANCE_BUTTON_LEFT, false),
+		AutoMappingEntry(0, JOY_BUTTON_2, DANCE_BUTTON_RIGHT, false),
+		AutoMappingEntry(0, JOY_BUTTON_3, DANCE_BUTTON_UP, false),
+		AutoMappingEntry(0, JOY_BUTTON_4, DANCE_BUTTON_DOWN, false),
+		AutoMappingEntry(0, JOY_BUTTON_11, GAME_BUTTON_START, false),
+		AutoMappingEntry(0, JOY_BUTTON_12, GAME_BUTTON_BACK, false)
 	   ),
 	   AutoMappings(
 		"dance",
@@ -559,21 +556,6 @@ static const AutoMappings g_AutoMappings[] =
 		AutoMappingEntry( 0, JOY_BUTTON_12,     GAME_BUTTON_MENULEFT,   false ),
 		AutoMappingEntry( 0, JOY_BUTTON_9,      GAME_BUTTON_MENURIGHT,  false )
 	   ),
-	   AutoMappings(
-		"techno",
-		"Dance ", //Notice the extra space at end
-		"LevelSix USB Pad (DDR638)",	// "DDR638" is the model number of the pad
-		AutoMappingEntry( 0, JOY_BUTTON_1,      TECHNO_BUTTON_UP,       false ),
-		AutoMappingEntry( 0, JOY_BUTTON_2,      TECHNO_BUTTON_DOWN,     false ),
-		AutoMappingEntry( 0, JOY_BUTTON_3,      TECHNO_BUTTON_LEFT,     false ),
-		AutoMappingEntry( 0, JOY_BUTTON_4,      TECHNO_BUTTON_RIGHT,    false ),
-		AutoMappingEntry( 0, JOY_BUTTON_5,      TECHNO_BUTTON_DOWNRIGHT,false ),
-		AutoMappingEntry( 0, JOY_BUTTON_6,      TECHNO_BUTTON_DOWNLEFT, false ),
-		AutoMappingEntry( 0, JOY_BUTTON_7,      TECHNO_BUTTON_UPRIGHT,  false ),
-		AutoMappingEntry( 0, JOY_BUTTON_8,      TECHNO_BUTTON_UPLEFT,   false ),
-		AutoMappingEntry( 0, JOY_BUTTON_9,      GAME_BUTTON_BACK,       false ),
-		AutoMappingEntry( 0, JOY_BUTTON_10,     GAME_BUTTON_START,      false )
-		),
 };
 
 void InputMapper::Unmap( InputDevice id )
